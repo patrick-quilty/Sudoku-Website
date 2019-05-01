@@ -1,13 +1,14 @@
 let Cells = [];
 let Combo = [];
 let Board = [];
+let CanBoard = [];
 const Groups = [];
 const Relations = [];
 let ClearedCount = 0;
 let OutText = [];
 let Guess = false;
 let Complete = false;
-let SolveTime = 0;
+let Candidates = false;
 
 // Initial Functions
 function groupsDecs() {
@@ -173,42 +174,333 @@ function groupsDecs() {
   ];
 }
 function boardSetup() {
-  let textAreaString = "";
+  let textAreaString = `
+  <p class="columns">
+  <label class="columnBlank">..</label>
+  <label class="column">x1</label>
+  <label class="column">x2</label>
+  <label class="column">x3</label>
+  <label class="column">x4</label>
+  <label class="column">x5</label>
+  <label class="column">x6</label>
+  <label class="column">x7</label>
+  <label class="column">x8</label>
+  <label class="column">x9</label>
+  </p>
+  `;
   for (let x = 0; x <= 80; x++) {
+    if (x % 9 == 0) { 
+      textAreaString += `<p class="row"><label class="rowLabel">` + (x / 9 + 1) + `x</label>` 
+    }
     textAreaString += `
-      <input type="text" name="txt${Cells[x]}" class="txt txt${Cells[x]} ${(x % 3 == 0 && x % 9 != 0) ? "extraLeft" : ""} ${(parseInt(x / 9) == 3 || parseInt(x / 9) == 6) ? "extraTop" : ""}">
+      <textarea name="txt${Cells[x]}" id="txt${Cells[x]}" style="resize: none" class="txt txt${Cells[x]} ${(x % 3 == 0 && x % 9 != 0) ? "extraLeft" : ""} ${(parseInt(x / 9) == 3 || parseInt(x / 9) == 6) ? "extraTop" : ""}"></textarea>
     `;
+    if (x % 9 == 8) { 
+      textAreaString += `</p><br>` 
+    }
   }
   $('.board').html(textAreaString);
-  // Initialize and place TextAreas
+  // Initialize and place board TextAreas
+
+  $('.output').html(`
+  <textarea class="outputText" id="outputText" readonly>
+  .Buttons on 2 lines keep slides on one, lower to bottom
+  .Add title tags for all hover elements
+  .Make All Buttons and Textareas and slider look pretty
+  .Add more puzzles and test their actual difficulty
+  .Add //_\\ text icon above puzzle board
+  .Do more stupid proof testing, maybe candidate mode?
 
 
-  $('.output').html(`<textarea class="outputText"></textarea>`);
-  // Initialize and place output TextArea
+  Big stuff if plenty of time:
+  .Click in solution box and move that point in time to the board
+  .Maybe highlights with this stuff /\
+  .Click in textarea remove candidate
+  .Tools additions of remove immediate relations, and maybe furthur methods and hints or next move
+  .Compare to other online solvers/players
 
-  let buttonString = "";
-  buttonString = `
-    <button class="button" id="input"><span class="button input">Input</span></button>
-    <button class="button" id="clear"><span class="button clear">Clear</span></button>
-    <button class="button" id="solve"><span class="button solve">Solve</span></button>
+
+  </textarea>
+  <div class="slideContainer">
+    <input type="range" min="1" max="50" value="6" class="slider" id="myRange" title="Solution Box Text Size">
+  </div>
+  `); // Initialize and place output TextArea and Font Size slider
+
+  let controlsString = "";
+  controlsString = `
+    <section class="mainButtons">
+      <div class="line1">
+        <button class="button" id="input">
+          <span class="button input">Input</span>
+        </button>
+        <button class="button" id="clear">
+          <span class="button clear">Clear</span>
+        </button>
+        <button class="button" id="solve">
+          <span class="button solve">Solve</span>
+        </button>
+      </div>
+      <div class="line2">
+        <button class="button" id="tools">
+          <span class="button tools">Tools</span>
+        </button>
+        <button class="button" id="build">
+          <span class="button build">Build</span>
+        </button>
+        <button class="button" id="brute">
+          <span class="button brute">Brute</span>
+        </button>
+      </div>
+    </section>
+    <section role="region" class="slide buildSec">
+      <form role="form" class="buildForm">
+        <fieldset>
+          <label class="diff">
+            <input type="radio" name="diff" class="radio" value="1" checked/>
+            <span>Easy</span>
+          </label>
+          <label class="diff">
+            <input type="radio" name="diff" class="radio" value="2"/>
+            <span>Intermediate</span>
+          </label>
+          <label class="diff">
+            <input type="radio" name="diff" class="radio" value="3""/>
+            <span>Hard</span>
+          </label>
+          <label class="diff">
+            <input type="radio" name="diff" class="radio" value="4"/>
+            <span>Expert</span>
+          </label>
+          <label class="diff">
+            <input type="radio" name="diff" class="radio" value="5"/>
+            <span>Trial and Error</span>
+          </label>
+          <button class="button2" id="create">
+            <span class="button create">Create</span>
+          </button>
+          <img class="img bulidUp" id="buildUp" src="https://www.freeiconspng.com/uploads/up-arrow-png-12.png" width="25" alt="Slideup arrow" />
+        </fieldset>
+      </form>
+    </section>
+    <section role="region" class="slide bruteSec">
+      <form role="form" class="bruteForm">
+        <fieldset>
+          <button class="button2" id="normalBrute">
+            <span class="button normalBrute">Normal Brute Force</span>
+          </button>
+          <button class="button2" id="showBrute">
+            <span class="button showBrute">Show Path Taken</span>
+          </button>
+          <img class="img bruteUp" id="bruteUp" src="https://www.freeiconspng.com/uploads/up-arrow-png-12.png" width="25" alt="Slideup arrow" />
+        </fieldset>
+      </form>
+    </section>
+    <section role="region" class="slide toolsSec">
+      <form role="form" class="toolsForm">
+        <fieldset>
+        <button class="numbtnO" id="numbtnO" title="Toggle Candidates for All Cells">
+          <span class="numbtnSpan numbtnSpanO">O</span>
+        </button>
+        <button class="numbtn numbtn1" id="numbtn" name="1">
+          <span class="numbtnSpan numbtnSpan1">1</span>
+        </button>
+        <button class="numbtn numbtn2" id="numbtn" name="2">
+          <span class="numbtnSpan numbtnSpan2">2</span>
+        </button>
+        <button class="numbtn numbtn3" id="numbtn" name="3">
+          <span class="numbtnSpan numbtnSpan3">3</span>
+        </button>>
+        <button class="numbtn numbtn4" id="numbtn" name="4">
+          <span class="numbtnSpan numbtnSpan4">4</span>
+        </button>
+        <button class="numbtn numbtn5" id="numbtn" name="5">
+          <span class="numbtnSpan numbtnSpan5">5</span>
+        </button>
+        <button class="numbtn numbtn6" id="numbtn" name="6">
+          <span class="numbtnSpan numbtnSpan6">6</span>
+        </button>
+        <button class="numbtn numbtn7" id="numbtn" name="7">
+          <span class="numbtnSpan numbtnSpan7">7</span>
+        </button>
+        <button class="numbtn numbtn8" id="numbtn" name="8">
+          <span class="numbtnSpan numbtnSpan8">8</span>
+        </button>
+        <button class="numbtn numbtn9" id="numbtn" name="9">
+          <span class="numbtnSpan numbtnSpan9">9</span>
+        </button>
+        <button class="numbtnX" id="numbtnX" title="Toggle Candidates for Highlighted Cell">
+          <span class="numbtnSpan numbtnSpanX">X</span>
+        </button>
+        <img class="img toolsUp" id="toolsUp" src="https://www.freeiconspng.com/uploads/up-arrow-png-12.png" width="25" alt="Slideup arrow" />
+        </fieldset>
+      </form>
+    </section>
   `;
-  $('.controls').html(buttonString);
-  // Initialize and place Buttons
+  $('.controls').html(controlsString);
+  // Initialize and place Controls
 
+  $(`.slide`).hide();
+  $(`.slide`).slideUp();
+  // Hides sliders until needed
 }
-function handleButtonPress() {
+function handleEvents() {
   // Tells the page to call a function based on the button clicked
   $('.controls').on('click', 'button', function(event) {
     event.preventDefault();
-
     switch(event.currentTarget.id) {
+      case 'tools': window['toolsDown'](); break;
       case 'input': window['inputBoard'](); break;
       case 'clear': window['clearBoard'](); break;
+      case 'brute': window['bruteDown'](); break;
+      case 'normalBrute': window['brute'](false); break;
+      case 'showBrute': window['brute'](true); break;
       case 'solve': window['solveBoard'](); break;
+      case 'build': window['buildDown'](); break;
+      case 'create': window['newPuzzle'](); break;
+      case 'numbtnO': window['toggleAllCandidates'](); break;
+      // case 'numbtn1', //maybe more here or how do i want to handle this
+      case 'numbtnX': window['toggleOneCandidates'](); break;
+      case 'numbtn': window['toggleNumber'](event.currentTarget.name); break;
+    }
+  }); // Buttons
+
+  $('.board').on('click', 'textarea', function(event) {
+    event.preventDefault();
+    $(`.txt`).removeClass('currentCell');
+    $(this).addClass('currentCell');
+  }); // Highlights current cell
+
+
+  $('.controls').on('click', 'img', function(event) {
+    event.preventDefault();
+    switch(event.currentTarget.id) {
+      case 'buildUp': window['buildUp'](); break;
+      case 'bruteUp': window['bruteUp'](); break;
+      case 'toolsUp': window['toolsUp'](); break;
+    }
+  }); // Slide up arrow actions
+
+  $('.slider').on('change', function() {
+    event.preventDefault();
+    let fontSize = $('.slider').val();
+    outputText(fontSize);
+  }); // Font-size slider
+}
+function toggleAllCandidates() {
+  // Toggles all candidates
+  if (!Candidates) {
+    inputBoard();
+    Cells.forEach(function(x) {
+      if (Board[x].length = 0 || (typeof Board[x] != 'undefined')) { Board[x] = "123456789"; }
+      if (typeof CanBoard[x] != 'undefined') {
+        Board[x] = CanBoard[x].replace(/ /g,'');
+        Board[x] = Board[x].replace(/(\r\n|\n|\r)/gm,'');;
+        $(`.txt${x}`).val(CanBoard[x]);
+      }
+    });
+  } // Assigns default values the first time
+
+  Cells.forEach(function(x) {
+    let test = true;
+    if (!Candidates && (typeof CanBoard[x] != 'undefined')) { test = false; }
+    if (test) {
+      if ($(`.txt${x}`).hasClass('candidateCell')) {
+        if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
+        if (Board[x].length == 1) { $(`.txt${x}`).val(Board[x]); }
+        $(`.txt${x}`).removeClass('candidateCell');
+      } else {
+        if ($(`.txt${x}`).val() == "") {
+          $(`.txt${x}`).addClass('candidateCell');
+          canConvert(x);
+        }
+      }
     }
   });
-  
+  Candidates = true;
+}
+function toggleOneCandidates() {
+  // Toggle highlighted cell
+  Cells.forEach(function(x) {
+    if ($(`.txt${x}`).hasClass('currentCell')) {
+      if ($(`.txt${x}`).hasClass('candidateCell')) {
+        if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
+        if (Board[x].length == 1) { $(`.txt${x}`).val(Board[x]); }
+        $(`.txt${x}`).removeClass('candidateCell');
+      } else {
+        $(`.txt${x}`).addClass('candidateCell');
+        if ((typeof Board[x] == 'undefined') || Board[x] == "") { Board[x] = "123456789"; }
+        canConvert(x);
+      }
+    }
+  });
+}
+function toggleNumber(number) {
+  // When number button pressed switch it on or off
+  for (let x = 11; x <= 99; x++) {
+    if (x % 10 == 0) { x++; }
+    if ($(`.txt${x}`).hasClass('currentCell')) {
+      if ($(`.txt${x}`).hasClass('candidateCell')) {
+        if (Board[x].includes(number)) {
+          Board[x] = Board[x].replace(number, "");
+        } else {
+          Board[x] = Board[x] + number;
+          let temp = "123456789";
+          for (let y = 1; y <= 9; y++) {
+            if (!Board[x].includes(y)) {
+              temp = temp.replace(y, "");
+            } 
+          }
+          Board[x] = temp;
+        }
+        canConvert(x);
+      } else {
+        Board[x] = number;
+        $(`.txt${x}`).val(Board[x]);
+      }
+      x = 99;
+    }
+  }
+}
+function canConvert(cell) {
+  // If switching to candidate mode then show the candidates
+  CanBoard[cell] = "1 2 3\n4 5 6\n7 8 9";
+  for (let x = 1; x <= 9; x++) {
+    if (!Board[cell].includes(x)) { CanBoard[cell] = CanBoard[cell].replace(x, " "); }
+  }
+  $(`.txt${cell}`).val(CanBoard[cell]);
+}
+function notCandidateMode() {
+  // Returns Board to normal settings when needed
+  Cells.forEach(function(x) {
+    if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
+    if ($(`.txt${x}`).hasClass('candidateCell')) { $(`.txt${x}`).removeClass('candidateCell'); }
+  });
+}
 
+// Slide Menus
+function buildDown() {
+  $(`.buildSec`).slideToggle(500);
+  $(`.bruteSec`).slideUp(500);
+  $(`.toolsSec`).slideUp(500);
+}
+function buildUp() {
+  $(`.buildSec`).slideUp(500);
+}
+function bruteDown() {
+  $(`.buildSec`).slideUp(500);
+  $(`.bruteSec`).slideToggle(500);
+  $(`.toolsSec`).slideUp(500);
+}
+function bruteUp() {
+  $(`.bruteSec`).slideUp(500);
+}
+function toolsDown() {
+  $(`.buildSec`).slideUp(500);
+  $(`.bruteSec`).slideUp(500);
+  $(`.toolsSec`).slideToggle(500);
+}
+function toolsUp() {
+  $(`.toolsSec`).slideUp(500);
 }
 
 // Board Handling
@@ -228,16 +520,32 @@ function inputBoard() {
   // If importing a game string then break up the string and assign it to the Board array
   // If not then just assign to the Board array
   if ($('.txt11').val().length == 81) {
+    Guess = false;
+    Complete = false;
+    Candidates = false;
+    Board.length = 0;
+    CanBoard.length = 0;
+    ClearedCount = 0;
     Cells.reverse().forEach(function(x) {
       Board[x] = $('.txt11').val()[80 - Cells.indexOf(x)];
     });
     Cells.reverse();
+    notCandidateMode();
   } else {
     Cells.forEach(function(x) {
       Board[x] = $(`.txt${x}`).val();
     });
   }
   outputBoard();
+  Cells.forEach(function(x) {
+    if (Board[x].length > 0) {
+      $(`.txt${x}`).addClass('originalBoard');
+      $(`.txt${x}`).attr('readonly','true');
+    } else {
+      $(`.txt${x}`).removeClass('originalBoard');
+      $(`.txt${x}`).removeAttr('readonly','true');
+    }
+  });
 }
 function outputBoard() {
   // Clears every Cell that is not a Number 1 - 9 and prints the rest to the board
@@ -251,18 +559,34 @@ function outputBoard() {
   });
 }
 function clearBoard() {
-  // Clears Board
+  // Clears Board and resets variables
+
+  if (Board.length == 0) {
+    let span = document.getElementById("outputText");
+    span.innerHTML = "";
+  } // If board already cleared then clear solution area
+
+  Guess = false;
+  Complete = false;
+  Candidates = false;
+  Board.length = 0;
+  CanBoard.length = 0;
   ClearedCount = 0;
   $(`.txt`).val('');
+  notCandidateMode();
+  $(`.txt`).removeClass('originalBoard');
+  $(`.txt`).removeAttr('readonly','true');
 }
 
 // Output Tools
-function outputText() {
+function outputText(fontSize) {
   let finalText = "";
   for (let x = 0; x < OutText.length; x++) {
     finalText += OutText[x];
   }
-  $('.outputText').val(finalText);
+  let span = document.getElementById("outputText");
+  span.style.fontSize = fontSize + "px";
+  span.innerHTML = finalText;
   console.log(finalText);
 }
 function assignDefaultValues() {
@@ -388,23 +712,6 @@ function addCommasAndAnd(cellNums) {
   return cellNums;
 }
 
-// Variable Controllers
-function whichRCbyCC(cell1, cell2) {
-  // Input 2 cell numbers
-  // Output the Row or Column they are in, else -1
-  // Math:
-  if (cell1 / 10 | 0 == cell2 / 10 | 0) { return (cell1 / 10 | 0) - 1; }
-  if (cell1 % 10 == cell2 % 10) { return cell1 % 10 - 1 + 9; }
-  return -1;
-}
-function whichRCbyBLL(boxNum, location1, location2) {
-  // Input the Box and 2 Locations (0 thur 8) in the Box
-  // Output the Row or Column they are in
-  // Simplifies having to type nested if then statements
-  return whichRCbyCC(Groups[boxNum][location1], Groups[boxNum][location2]);
-}
-
-
 // Solve Method Tools
 function clearRelations(cellNumber) {
   // If a Cell only has one possibility then mark that as the solution to that Cell
@@ -512,6 +819,20 @@ function rcbOverlap(rcNum, boxNum) {
     }
   }
   return cells;
+}
+function whichRCbyCC(cell1, cell2) {
+  // Input 2 cell numbers
+  // Output the Row or Column they are in, else -1
+  // Math:
+  if (cell1 / 10 | 0 == cell2 / 10 | 0) { return (cell1 / 10 | 0) - 1; }
+  if (cell1 % 10 == cell2 % 10) { return cell1 % 10 - 1 + 9; }
+  return -1;
+}
+function whichRCbyBLL(boxNum, location1, location2) {
+  // Input the Box and 2 Locations (0 thur 8) in the Box
+  // Output the Row or Column they are in
+  // Simplifies having to type nested if then statements
+  return whichRCbyCC(Groups[boxNum][location1], Groups[boxNum][location2]);
 }
 function findSubgroupOverlap(cells, boxNum) {
   // Find all the instances in a Box of at least 2 Cells
@@ -625,7 +946,6 @@ function findSubset(cells) {
   // to add later easier and also counts how many possibilities for each number
 
   for (let x = 0; x <= 245; x++) {
-
     returns = searchCombinations(x);
     let setSize = returns[5];
     // Isolates the Numbers to search through into their own variables
@@ -638,8 +958,8 @@ function findSubset(cells) {
 
     if (check) { // If all the above criteria is met then check if the Numbers form a subset
       returns[0] = setSize;
-
-      for (let y = 0; y <= setSize; y++) {
+      returns[5] = 0;
+      for (let y = 1; y <= setSize; y++) {
         returns[5] += cell[returns[y]];
       }
       returns[5] += cap;
@@ -660,7 +980,6 @@ function findSubset(cells) {
 function evaluateSubset(subset, cells, rcbNum) {
   // If the Cells in the subset contain Numbers not in the subset then remove those Numbers
   let changes = false;
-
   let sReplace = "123456789";
   sReplace = sReplace.replace("" + subset[1], "");
   sReplace = sReplace.replace("" + subset[2], "");
@@ -700,6 +1019,7 @@ function evaluateSubset(subset, cells, rcbNum) {
     if (subset[4] != 0) { subNums += subset[4] + "|"; }
     OutText.push("\nIn " + convertRCBToText(rcbNum) + ", the numbers " + addCommasAndAnd(subNums) + " form a Subset, so clear the rest of Cell" + addCommasAndAnd(cellNums) + ".");
   } // Prints the removed Numbers
+
   return changes;
 }
 function findAndEvaluateChain(sCombo, rowsOrColumns, number) {
@@ -797,6 +1117,7 @@ function findAndEvaluateChain(sCombo, rowsOrColumns, number) {
       rcTag = addCommasAndAnd(rcTag);
       switchTag = addCommasAndAnd(switchTag);
       OutText.push("\nIn " + (rowsOrColumns == 0 ? "Rows " : "Columns ") + rcTag + ", the Number " + number + " forms a Chain in " + (rowsOrColumns == 1 ? "Rows " : "Columns ") + switchTag + ", so remove " + number + " as a possibility from Cell" + addCommasAndAnd(resultCells) + ".");
+
       results = true;
     } // Prints the removed Numbers
   }
@@ -806,8 +1127,10 @@ function findAndEvaluateChain(sCombo, rowsOrColumns, number) {
 // Solve Method Schemes
 function solveBoard() {
   // Solves the puzzle, if solvable, and details the steps taken
+  notCandidateMode();
+  let solveTime;
   if (ClearedCount == 0) {
-    SolveTime = new Date().getTime();
+    solveTime = new Date().getTime();
     OutText.length = 0;
     Guess = false;
     Complete = false;
@@ -819,36 +1142,44 @@ function solveBoard() {
     sysOutPrintBoard();
   } // First time board setup
 
-  // Put brute force here if board empty, call show path
+  if (ClearedCount == 0) { brute(false); return;}
+  // If nothing on board then brute solve for fun
 
   let test = [];
-  while (true) {
-    let test = [];
-    test[0] = clearAllRelations();
-    if (ClearedCount > 80) { break; }
-    test[1] = onlyInGroup();
-    if (ClearedCount > 80) { break; }
-    test[2] = rcbInteraction();
-    test[3] = singleGroupMultipleNumbersSubset();
-    test[4] = multipleGroupsSingleNumberChain();
-    if (!test[0] && !test[1] && !test[2] && !test[3] && !test[4]) { break; }
-  }; // Main Logic based solve methods
+  do {
+    test = [];
+    if (ClearedCount < 81) { test[0] = clearAllRelations(); }
+    if (ClearedCount < 81) { test[1] = onlyInGroup(); }
+    if (ClearedCount < 81) { test[2] = rcbInteraction(); }
+    if (ClearedCount < 81) { test[3] = singleGroupMultipleNumbersSubset(); }
+    if (ClearedCount < 81) { test[4] = multipleGroupsSingleNumberChain(); }
+  } while (test[0] || test[1] || test[2] || test[3] || test[4]);
+  // Main Logic based solve methods
 
-  if (!Guess && ClearedCount < 81 && ClearedCount > 0) {
-    OutText.push("\nThe main logical methods have been exhausted.");
-    guess();
-  } // Trial And Error solve method
+
+
+  // if (!Guess && ClearedCount < 81 && ClearedCount > 0) {
+  //   OutText.push("\nThe main logical methods have been exhausted.");
+  //   guess();
+  // } // Trial And Error solve method
+  // And add brute after if guess doesn't cut it
+  // Turn this on before finish /\
+
+
+
+
+
+  
 
   if (ClearedCount == 81 && !Complete) {
     sysOutPrintBoard();
     outputBoard();
     Complete = true;
     ClearedCount = 0;
-    let totalTime = new Date().getTime() - SolveTime;
+    let totalTime = new Date().getTime() - solveTime;
     let time = totalTime / 1000;
     OutText.push("\nPuzzle solved in " + time + " seconds.");
-    outputText();
-    OutText.length = 0;
+    outputText($('.slider').val());
   } // When the puzzle is finished print everything out
   
   if (!Guess && ClearedCount == 82) { ClearedCount = 0; }
@@ -871,43 +1202,38 @@ function clearAllRelations() {
 function onlyInGroup() {
   // If a Number can only be in one Cell in a Row/Column/Box then assign that Number to that Cell
   let returns = false;
-  let changes = false;
-  do {
-    changes = false;
-    for (let number = 1; number <= 9; number++) {
-      for (let rcbNum = 0; rcbNum <= 26; rcbNum++) {
-        let cells = findNumberInRCB(number, rcbNum);
-        // Finds all the Cells that contain the Number in the Row/Column/Box
-        let instances = [];
-        instances[1] = 0;
-        for (let location = 0; location <= 8; location++) {
-          if (cells[location]) {
-              instances[0] = location;
-              instances[1] += 1;
-          }
-        } // Checks how many Cells can contain the Number in the Row/Column/Box
+  for (let number = 1; number <= 9; number++) {
+    for (let rcbNum = 0; rcbNum <= 26; rcbNum++) {
+      let cells = findNumberInRCB(number, rcbNum);
+      // Finds all the Cells that contain the Number in the Row/Column/Box
 
-        if (instances[1] == 1 && Board[Groups[rcbNum][instances[0]]].length > 1) {
-          Board[Groups[rcbNum][instances[0]]] = "" + number;
-          OutText.push("\nCell " + Groups[rcbNum][instances[0]] + " is the only Cell in " + convertRCBToText(rcbNum) + " that can be " + number + ".  So Cell " + Groups[rcbNum][instances[0]] + " is " + number + ".");
-          // Prints the removed Numbers
+      let instances = [];
+      instances[1] = 0;
+      for (let location = 0; location <= 8; location++) {
+        if (cells[location]) {
+            instances[0] = location;
+            instances[1] += 1;
+        }
+      } // Checks how many Cells can contain the Number in the Row/Column/Box
 
-          changes = true;
+      if (instances[1] == 1 && Board[Groups[rcbNum][instances[0]]].length > 1) {
+        Board[Groups[rcbNum][instances[0]]] = "" + number;
+        OutText.push("\nCell " + Groups[rcbNum][instances[0]] + " is the only Cell in " + convertRCBToText(rcbNum) + " that can be " + number + ".  So Cell " + Groups[rcbNum][instances[0]] + " is " + number + ".");
+        // Prints the removed Numbers
 
-          clearAllRelations();
-          if (ClearedCount == 82) { return false; }
-          // Checks if the removed Numbers allowed the puzzle to be solved by an easier method
-        } // If the Number can only be in one Cell and the Cell is not solved already then assign it
-      }
+        returns = true;
+        clearAllRelations();
+        if (ClearedCount == 82) { return false; }
+        // Checks if the removed Numbers allowed the puzzle to be solved by an easier method
+      } // If the Number can only be in one Cell and the Cell is not solved already then assign it
     }
-    if (changes) { returns = true; }
-  } while (changes);
+  }
   return returns;
 }
 function rcbInteraction() {
   // If there are 2/3 Cells, in a Row/Column within the same Box, that a Number must be in because of the
   // Row/Column or the Box then remove that Number as a possibility from either the Box or Row/Column
-  let changes = false;
+  let returns = false;
   for (let number = 1; number <= 9; number++) {
     for (let boxNum = 18; boxNum <= 26; boxNum++) {
       let boxCells = findNumberInRCB(number, boxNum);
@@ -917,19 +1243,19 @@ function rcbInteraction() {
       // Find all the instances in the Box of at least 2 Cells
       // in the same Row/Column that contain the Number
 
-      let subChanges = evaluateSubgroupOverlap(rcNum, number, boxNum, boxCells);
+      let changes = evaluateSubgroupOverlap(rcNum, number, boxNum, boxCells);
       // If the subgroup of Cells must contain the Number then remove the Number
       // from the possibilities of either the rest of the Row/Column or the Box
 
-      if (subChanges) { changes = true; }
+      if (changes) { returns = true; }
     }
   }
-  return changes;
+  return returns;
 }
 function singleGroupMultipleNumbersSubset() {
   // If, in a Row/Column/Box, a group of possible Numbers form a subset then
   // remove the possible Numbers in those Cells that aren't in the subset
-  let changes = false;
+  let returns = false;
   let cells = [];
   for (let rcbNum = 0; rcbNum <= 26; rcbNum++) {
     for (let number = 0; number <= 9; number++) {
@@ -939,17 +1265,19 @@ function singleGroupMultipleNumbersSubset() {
     let subset = findSubset(cells);
     // Finds a subset in the Row/Column/Box if there is one
 
+    let changes = false;
     if (subset[0] != 0) { changes = evaluateSubset(subset, cells, rcbNum); }
     // If the Cells in the subset contain Numbers not in the subset then remove those Numbers
+    if (changes) { returns = true; }
   }
-  return changes;
+  return returns;
 }
 function multipleGroupsSingleNumberChain() {
   // Also known as X-Wing / Swordfish
   // If, in multiple Rows/Columns, a Number is found the same number of times as Columns/Rows that it is in,
   // then those Cells can be said to form a chain.  If the Number can be found in the Columns/Rows of the chain
   // but in Cells not in the chain, then remove the Number as a possibility from those Cells.
-  let changes = false;
+  let returns = false;
   for (let rowsOrColumns = 0; rowsOrColumns <= 1; rowsOrColumns++) {
     for (let number = 1; number <= 9; number++) {
       for (let comboNumber = 0; comboNumber <= 245; comboNumber++) {
@@ -957,17 +1285,15 @@ function multipleGroupsSingleNumberChain() {
         let sCombo = searchCombinations(comboNumber);
         // Picks the Rows or Columns to compare
 
-        let test = findAndEvaluateChain(sCombo, rowsOrColumns, number);
-        if (test) { changes = true; }
+        let changes = findAndEvaluateChain(sCombo, rowsOrColumns, number);
         // Compares the Rows or Columns and if there is a chain then clear the chain
+
+        if (changes) { returns = true; }
       }
     }
   }
-  return changes;
+  return returns;
 }
-
-
-
 function guess() {
   if (!Guess) {
     OutText.push("\n\n\nBegin Trial and Error.\n\n");
@@ -1062,19 +1388,293 @@ function guess() {
     }
   } // If the puzzle can be solved by guessing at Cells with 3 options then solve it
 }
+function brute(show) {
+  // Hard Brute ..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9
+  notCandidateMode();
+  let solveTime = new Date().getTime();
+  OutText.length = 0;
+  OutText.push("Begin Brute Force");
+  inputBoard();
+
+  let neighbors = new Array(100);
+  for (let a = 11; a <= 99; a++) {
+    if (a % 10 == 0) { a++; }
+    neighbors[a] = new Array(20);
+    let counter = -1;
+    for (let b = 11; b <= 99; b++) {
+      if (b % 10 == 0) { b++; }
+      if (a != b) {// If same row\/   or column\/           \/or in the same box
+        if ((a / 10 | 0) == (b / 10 | 0) || a % 10 == b % 10 || ((((a / 10 | 0) - 1 ) / 3 | 0)  == (((b / 10 | 0) - 1 ) / 3 | 0) && ((a % 10 - 1 ) / 3 | 0) == ((b % 10 - 1 ) / 3 | 0))) {
+          counter++;
+          neighbors[a][counter] = b;
+        }
+      }
+    }
+  } // Define relations manually because math is fun
+
+  if (show) {
+    for (let cell = 11; cell <= 99; cell++) {
+      if (cell % 10 == 0) { cell++; }
+
+      if (Board[cell] == "") {
+        let current = 1;
+        let test;
+        do {
+          if (current < 10) {
+            Board[cell] = "" + current;
+            OutText.push("\nTrying Cell " + cell + " as " + current);
+            test = true;
+            for (let neighbor = 0; neighbor <= 19; neighbor++) { ///
+              if (Board[neighbors[cell][neighbor]] != null && Board[neighbors[cell][neighbor]] != "" && Board[neighbors[cell][neighbor]] == Board[cell]) {
+                test = false;
+                OutText.push("\nCell " + cell + " cannot be " + current + " because Cell " + neighbors[cell][neighbor] + " is " + Board[neighbors[cell][neighbor]]);
+                neighbor = 19;
+              }
+            }
+          } else { test = false; }
+          if (!test) {
+            current++;
+            if (current > 9) {
+              OutText.push("\nCell " + cell + " cannot be any number\nClearing Cell " + cell + " and moving back to Cell " + (cell - 1));
+              Board[cell] = "";
+              cell--;
+              if (cell % 10 == 0) { cell--; }
+              if (Board[cell] != null && Board[cell] != "") {
+                current = parseInt(Board[cell]);
+              } else { current = 0; }
+              current++;
+            }
+          }
+        } while (!test);
+      }
+    }
+  } else {
+    for (let cell = 11; cell <= 99; cell++) {
+      if (cell % 10 == 0) { cell++; }
+
+      if (Board[cell] == "") {
+        let current = 1;
+        let test;
+        do {
+          if (current < 10) {
+            Board[cell] = "" + current;
+            test = true;
+            for (let neighbor = 0; neighbor <= 19; neighbor++) { ///
+              if (Board[neighbors[cell][neighbor]] != null && Board[neighbors[cell][neighbor]] != "" && Board[neighbors[cell][neighbor]] == Board[cell]) {
+                test = false;
+                neighbor = 19;
+              }
+            }
+          } else { test = false; }
+          if (!test) {
+            current++;
+            if (current > 9) {
+              Board[cell] = "";
+              cell--;
+              if (cell % 10 == 0) { cell--; }
+              if (Board[cell] != null && Board[cell] != "") {
+                current = parseInt(Board[cell]);
+              } else { current = 0; }
+              current++;
+            }
+          }
+        } while (!test);
+      }
+    }
+  }
+
+  outputBoard();
+  let totalTime = new Date().getTime() - solveTime;
+  let time = totalTime / 1000;
+  OutText.push("\nA solution has been found.  Brute Forced in " + time + " seconds.\nThis does not guarentee the puzzle has only one solution.  This is just the first solution found.");
+  outputText($('.slider').val());
+  // Print time to solve by brute force
+}
+
+// New Puzzle Creation
+function newPuzzle() {
+  // 4 - Rotate
+  // 6 - Col 123
+  // 6 - Col 456
+  // 6 - Col 789
+  // 6 - Col Blocks
+  // 6 - Row 123
+  // 6 - Row 456
+  // 6 - Row 789
+  // 6 - Row Blocks
+  // 5 - Symmetry
+  // 9! - Numbers
+  // 12,189,981,081,600 different variations Per Puzzle
+
+  notCandidateMode();
+  let difficulty = $("[name='diff']:checked").val();
+  let newBoard;
+  let random;
+
+
+  if (difficulty == 4) { newBoard = Puzzles[4][0]; } else { return; }
+  
 
 
 
 
+  let wasBoard = [];
+  Cells.forEach(function(x) {
+    Board[x] = newBoard.slice(0, 1);
+    wasBoard[x] = Board[x];
+    newBoard = newBoard.slice(1);
+  }); // Breaks down 81-char string into Board for usage and wasBoard for storage
 
+  random = randomIntFromInterval(0, 3);
+  if (random > 0) {
+    for (let x = 1; x <= random; x++) {
+      Cells.forEach(function(y) {
+        Board[y] = wasBoard[(y % 10 * 10 + (10 - (y / 10 | 0)))];
+      });
+      Cells.forEach(function(y) {
+        wasBoard[y] = Board[y];
+      });
+    }
+  } // Rotates the board
 
+  for (let x = 0; x <= 2; x++) {
+    random = randomIntFromInterval(0, 5);
+    if (random > 0) {
+      let columns = [ [],[],[],[],[],[] ];
+      for (let y = 0; y <= 26; y++) {
+        columns[y / 9 | 0].push(Board[Groups[9 + (y / 9 | 0) + 3 * x][y % 9]]);
+      } // Divide group of 3 Columns into an array each
+      
+      let newOrder = [ [0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0] ];
+      columns[3] = columns[newOrder[random][0]].slice();
+      columns[4] = columns[newOrder[random][1]].slice();
+      columns[5] = columns[newOrder[random][2]].slice();
+      // Shuffle the order
+
+      for (let y = 0; y <= 26; y++) {
+        Board[Groups[9 + (y / 9 | 0) + 3 * x][y % 9]] = columns[(y / 9 | 0) + 3][y % 9];
+      } // Puts the new order back on the board
+    }
+  } // Switches Columns around
+
+  for (let x = 0; x <= 2; x++) {
+    random = randomIntFromInterval(0, 5);
+    if (random > 0) {
+      let rows = [ [],[],[],[],[],[] ];
+      for (let y = 0; y <= 26; y++) {
+        rows[y / 9 | 0].push(Board[Groups[(y / 9 | 0) + 3 * x][y % 9]]);
+      } // Divide group of 3 Rows into an array each
+      
+      let newOrder = [ [0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0] ];
+      rows[3] = rows[newOrder[random][0]].slice();
+      rows[4] = rows[newOrder[random][1]].slice();
+      rows[5] = rows[newOrder[random][2]].slice();
+      // Shuffle the order
+
+      for (let y = 0; y <= 26; y++) {
+        Board[Groups[(y / 9 | 0) + 3 * x][y % 9]] = rows[(y / 9 | 0) + 3][y % 9];
+      } // Puts the new order back on the board
+    }
+  }// Switches Rows around
+
+  random = randomIntFromInterval(0, 5);
+  if (random > 0) {
+    let columnBox = [ [],[],[],[],[],[] ];
+    Cells.forEach(function(x) {
+      columnBox[((x % 10) - 1) / 3 | 0].push(Board[x]);
+    }); // Pull 3 sets of 3 columns into an array each
+
+    let newOrder = [ [0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0] ];
+    columnBox[3] = columnBox[newOrder[random][0]].slice();
+    columnBox[4] = columnBox[newOrder[random][1]].slice();
+    columnBox[5] = columnBox[newOrder[random][2]].slice();
+    // Shuffles the order
+
+    Cells.forEach(function(x) {
+      Board[x] = columnBox[(((x % 10) - 1) / 3 | 0) + 3][((x % 10 - 1) % 3 + (3 * ((x / 10 | 0) - 1)))];
+    }); // Puts the new order back on the board
+  } // Switches Column Boxes around
+
+  random = randomIntFromInterval(0, 5);
+  if (random > 0) {
+    let rowBox = [ [],[],[],[],[],[] ];
+    Cells.forEach(function(x) {
+      rowBox[(x - 10) / 30 | 0].push(Board[x]);
+    }); // Pull 3 sets of 3 rows into an array each
+
+    let newOrder = [ [0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0] ];
+    rowBox[3] = rowBox[newOrder[random][0]].slice();
+    rowBox[4] = rowBox[newOrder[random][1]].slice();
+    rowBox[5] = rowBox[newOrder[random][2]].slice();
+    // Shuffles the order
+
+    Cells.forEach(function(x) {
+      Board[x] = rowBox[((x - 10) / 30 | 0) + 3][(x - ((x - 10) / 10 | 0) - 11) % 27];
+    }); // Puts the new order back on the board
+  }// Switches Row Boxes around
+
+  random = randomIntFromInterval(0, 4);
+  Cells.forEach(function(x) {
+    wasBoard[x] = Board[x];
+  });
+  switch (random) {
+    case 0: // Symmetry line from the left center to the right center
+      Cells.forEach(function(x) {
+        Board[x] = wasBoard[x];
+        if (x < 50) { Board[x] = wasBoard[x + 10 * (10 - 2 * (x / 10 | 0))]; }
+        if (x > 60) { Board[x] = wasBoard[x - 10 * (2 * (x / 10 | 0) - 10)]; }
+      });
+      break;
+    case 1: // Symmetry line from the top left to the bottom right
+      Cells.forEach(function(x) {
+        Board[x] = wasBoard[10 * (x % 10) + (x / 10 | 0)];
+      });
+      break;
+    case 2: // Symmetry line from the top center to the bottom center
+      Cells.forEach(function(x) {
+        Board[x] = wasBoard[x];
+        if (x % 10 < 5) { Board[x] = wasBoard[x + 2 * (5 - x % 10)]; }
+        if (x % 10 > 5) { Board[x] = wasBoard[x - 2 * (x % 10 - 5)]; }
+      });
+      break;
+    case 3: // Symmetry line from the top right to the bottom left
+      Cells.forEach(function(x) {
+        Board[x] = wasBoard[x];
+        Board[x] = wasBoard[10 * (10 - x % 10) + 10 - (x / 10 | 0)];
+      });
+      break;
+    case 4: break;
+  } // Flips the board across an axis
+
+  Cells.forEach(function(x) {
+    newBoard += Board[x];
+  }); // Moves Board back to 81-char string
+
+  let letters = "abcdefghi";
+  for (let x = 0; x <= 8; x++) {
+    random = randomIntFromInterval(0, 8 - x);
+    let letter = letters.slice(random, random + 1);
+    do {
+      newBoard = newBoard.replace(letter, x + 1);
+    } while (newBoard.includes(letter))
+    letters = letters.replace(letter, "");
+  } // Assigns the numbers
+
+  $(`.txt11`).val(newBoard);
+  inputBoard();
+  // Shows the final board
+}
+function randomIntFromInterval(min, max) {
+  // min and max included
+  return Math.floor(Math.random()*(max-min+1)+min);
+}
+
+// Initial Setup
 function initialSetup() {
   groupsDecs();
   boardSetup();
-  handleButtonPress();
-
+  handleEvents();
   
 
 }
-
 $(initialSetup);
