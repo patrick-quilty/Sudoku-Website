@@ -195,8 +195,7 @@ function boardSetup() {
     }
     textAreaString += `
       <div class="hiContainer">
-        <textarea name="txt${Cells[x]}" id="txt${Cells[x]}" style="resize: none" class="txt txt${Cells[x]} ${(x % 3 == 0 && x % 9 != 0) ? "extraLeft" : ""} ${(parseInt(x / 9) == 3 || parseInt(x / 9) == 6) ? "extraTop" : ""}">
-        </textarea>
+        <textarea name="txt${Cells[x]}" id="txt${Cells[x]}" style="resize: none" class="txt txt${Cells[x]} ${(x % 3 == 0 && x % 9 != 0) ? "extraLeft" : ""} ${(parseInt(x / 9) == 3 || parseInt(x / 9) == 6) ? "extraTop" : ""}"></textarea>
         <div name="div${Cells[x]}" id="div${Cells[x]}" class="candidateCell div div${Cells[x]} ${(x % 3 == 0 && x % 9 != 0) ? "extraLeft" : ""} ${(parseInt(x / 9) == 3 || parseInt(x / 9) == 6) ? "extraTop" : ""}"></div>
       </div>
     `; // Adds textAreas and divs for highlighting purposes
@@ -209,16 +208,27 @@ function boardSetup() {
 
   $('.output').html(`
   <textarea class="outputText" id="outputText" readonly>
+  Small stuff:
   .Add title tags for all hover elements
   .Add more puzzles and test their actual difficulty
-  .Do more stupid proof testing, maybe candidate mode?
+  .Only allow 1-9 input in textareas other than txt11 where allow anything, but cap of 81 characters
+  .Maybe move font size slider to above solution area at css width change
+  .Handle clicks in the solution area at all other times / add click here message on solution area for the times you want it to be clickable
 
   Big stuff if plenty of time:
-  .Click in solution box and move that point in time to the board
-  .Maybe highlights with this stuff /\
+  .Arrowkey navigation
+  .Change how subsets are written about in the solution area and how the accompanying highlights turn out
+  .Accompanying highlights to solution area
   .Click in textarea remove candidate
   .Tools additions of remove immediate relations, and maybe furthur methods and hints or next move
+  .Ensure completely keyboard accessible and tab accessible in all situations
+  
+  Navel-gazing:
   .Compare to other online solvers/players
+  .View other sudoku solvers highlight decisions
+  .Change all div highlights to include filler class as background
+  .Brute solution area clicking
+
 
 
   </textarea>
@@ -390,10 +400,12 @@ function handleEvents() {
 function toggleAllCandidates() {
   // Toggles all candidates
   if (!Candidates) {
+    
     inputBoard();
     Cells.forEach(function(x) {
       if (Board[x].length = 0 || (typeof Board[x] != 'undefined')) { Board[x] = "123456789"; }
       if (typeof CanBoard[x] != 'undefined') {
+        // if (CanBoard[x] = "") { CanBoard[x] = "123456789"; }
         Board[x] = CanBoard[x].replace(/ /g,'');
         Board[x] = Board[x].replace(/(\r\n|\n|\r)/gm,'');;
         $(`.txt${x}`).val(CanBoard[x]);
@@ -404,8 +416,9 @@ function toggleAllCandidates() {
   Cells.forEach(function(x) {
     let test = true;
     if (!Candidates && (typeof CanBoard[x] != 'undefined')) { test = false; }
-    if ($(`.div${x}`).html().includes("span")) { test = false; $(`.txt${x}`).val(''); }
+    if ($(`.div${x}`).html().includes("span")) { test = false; }
     if (test) {
+      console.log("here", x);
       if ($(`.txt${x}`).hasClass('candidateCell')) {
         if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
         if (Board[x].length == 1) { $(`.txt${x}`).val(Board[x]); }
@@ -416,6 +429,10 @@ function toggleAllCandidates() {
           canConvert(x);
         }
       }
+    }
+    if ($(`.txt${x}`).val().length > 1 && !$(`.txt${x}`).hasClass('candidateCell')) {
+      $(`.txt${x}`).addClass('candidateCell');
+      canConvert(x);
     }
   });
   Candidates = true;
@@ -476,69 +493,278 @@ function notCandidateMode() {
   // Returns Board to normal settings when needed
   Cells.forEach(function(x) {
     if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
-    if ($(`.txt${x}`).hasClass('candidateCell')) { $(`.txt${x}`).removeClass('candidateCell'); }
+    $(`.txt${x}`).removeClass('originalBoard');
+    $(`.txt${x}`).removeClass('candidateCell');
+    $(`.txt${x}`).removeClass('highlightCell');
+    $(`.txt${x}`).removeClass('otherCell');
+    $(`.txt${x}`).removeClass('noTouchy');
+    $(`.txt${x}`).removeAttr('readonly','true');
   });
+  $(`.div`).html('');
 }
 
 
 
 function recallBoard(line) {
   // Rebuilds the board up to the line clicked based on the output text and highlights the important items from the clicked line
+  Candidates = false;
+  notCandidateMode();
+  let cell;
+  let cells;
+  let number;
+  let numbers;
+  let location;
+  let rcb = [];
+  let highlight;
+  let newLine;
+
   for (let x = 0; x <= line; x++) {
-    switch (Instructions[x]) {
+    switch (Instructions[x].slice(0, Instructions[x].indexOf("#"))) {
       case "boardString":
         $('.txt11').val(OutText[x].slice(1));
         inputBoard();
         assignDefaultValues();
         break;
       case "remove related":
-        let cell = OutText[x].slice(6, 8);
+        cell = OutText[x].slice(6, 8);
         Board[cell] = OutText[x].slice(12, 13);
         Relations[cell][20] = "Cleared";
         $(`.txt${cell}`).removeClass('candidateCell');
         $(`.txt${cell}`).val(Board[cell]);
         if (x != line) {
-          for (let x = 0; x <= 19; x++) {
-            Board[Relations[cell][x]] = Board[Relations[cell][x]].replace("" + Board[cell], "");
+          for (let y = 0; y <= 19; y++) {
+            Board[Relations[cell][y]] = Board[Relations[cell][y]].replace("" + Board[cell], "");
           }
         }
         break;
-      case 0: break;
+      case "must be":
+        if (x != line) {
+          number = OutText[x].slice(OutText[x].indexOf("Number") + 7);
+          number = number.slice(0, 1);
+          cells = OutText[x].slice(OutText[x].indexOf("Cell"));
+          cells = cells.replace(/,/g, '');
+          cells = cells.replace("and", '');
+          do {
+            location = cells.search(/\d/);
+            cell = cells.slice(location, location + 2)
+            Board[cell] = Board[cell].replace(number, "");
+            cells = cells.slice(location + 3);
+          } while (cells.length > 1);
+        }
+        break;
+      case "subset":
+        if (x != line) {
+          rcb[0] = Instructions[x].slice(Instructions[x].indexOf("#") + 1);
+          numbers = rcb[0].slice(rcb[0].indexOf("#") + 1);
+          rcb[0] = rcb[0].slice(0, rcb[0].indexOf("#"));
+          cells = OutText[x].slice(OutText[x].indexOf("Cell"));
+          cells = cells.replace(/,/g, '');
+          cells = cells.replace("and", '');
+          do {
+            location = cells.search(/\d/);
+            cell = cells.slice(location, location + 2);
+            for (let y = 1; y <= 9; y++) {
+              if (!numbers.includes(y) && Board[cell].includes(y)) { Board[cell] = Board[cell].replace(y, ""); }
+            }
+            cells = cells.slice(location + 3);
+          } while (cells.length > 1);
+        }
+        break;
+      case "chain":
+        if (x != line) {
+          number = OutText[x].slice(OutText[x].indexOf("Number") + 7, );
+          number  = number.slice(0, 1);
+          cells = OutText[x].slice(OutText[x].indexOf("Cell"));
+          cells = cells.replace(/,/g, '');
+          cells = cells.replace("and", '');
+          do {
+            location = cells.search(/\d/);
+            cell = cells.slice(location, location + 2)
+            Board[cell] = Board[cell].replace(number, "");
+            cells = cells.slice(location + 3);
+          } while (cells.length > 1);
+        }
+        break;
     }
   } // Removes everything before the clicked line
 
   Cells.forEach(function(x) {
     $(`.div${x}`).html('');
     $(`.txt${x}`).removeClass('highlightCell');
+    $(`.txt${x}`).removeClass('otherCell');
+    $(`.txt${x}`).removeClass('currentCell');
     if (!$(`.txt${x}`).hasClass('originalBoard') && Relations[x][20] != "Cleared") {
       if (!$(`.txt${x}`).hasClass('candidateCell')) { $(`.txt${x}`).addClass('candidateCell'); }
       canConvert(x);
     }
+    $(`.txt${x}`).addClass('noTouchy');
+    $(`.txt${x}`).attr('readonly','true');
   }); // Shows the candidates for all the cells not solved
   
-  switch (Instructions[line]) {
+  switch (Instructions[line].slice(0, Instructions[line].indexOf("#"))) {
     case "remove related":
-      let cell = OutText[line].slice(6, 8);
-      let number = Board[cell];
+      cell = OutText[line].slice(6, 8);
+      number = Board[cell];
       $(`.txt${cell}`).addClass('highlightCell');
       for (let x = 0; x <= 19; x++) {
+        if ($(`.txt${Relations[cell][x]}`).hasClass('candidateCell')) { $(`.txt${Relations[cell][x]}`).addClass('otherCell'); }
         if (Board[Relations[cell][x]].includes(number)) {
           Board[Relations[cell][x]] = Board[Relations[cell][x]].replace("" + Board[cell], "");
           canConvert(Relations[cell][x]);
           // Removes candidate from textArea
 
-          let newLine = "<span class=" + "'" + "highlightBoardX" + "'" + ">" + number + "</span>";
-          if ((number - 1) % 3 == 0) { newLine = newLine.replace("X", "Right"); }
-          if (number % 3 == 0) { newLine = newLine.replace("X", "Left"); }
-          let highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, newLine);
+          newLine = "<span class=" + "'" + "highlightBoardC" + "'" + ">" + number + "</span>";
+          highlight = "123\n456\n789".replace(number, newLine);
+          if ((number - 2) % 3 != 0) { 
+            newLine = newLine.replace("C", "LR"); 
+            highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, newLine);
+          }
           $(`.div${Relations[cell][x]}`).html(highlight);
           // Highlights the removed candidate in the beneath div
         }
       }
       break;
-    case 0: break;
-  } // Highlights the clicked line items
+    case "only group":
+      cell = OutText[line].slice(6, 8);
+      number = OutText[line].slice(-2, -1);
+      rcb[0] = Instructions[line].slice(Instructions[line].indexOf("#") + 1);
+      $(`.txt${cell}`).addClass('highlightCell');
+      for (let x = 0; x <= 8; x++) {
+        if (Groups[rcb[0]][x] != cell && Board[Groups[rcb[0]][x]].length != 1) { $(`.txt${Groups[rcb[0]][x]}`).addClass('otherCell'); }
+      } // Highlights Cells in same row/column/box
 
+      highlight = "123\n456\n789";
+      for (let x = 1; x <= 9; x++) {
+        newLine = "<span class=" + "'" + "fillerBoardLR" + "'" + ">" + x + "</span>";
+        if (Board[cell].includes(x)) {
+          newLine = newLine.replace("filler", "other");
+          if (x != number) {  
+            Board[cell] = Board[cell].replace("" + x, "");
+            newLine = newLine.replace("other", "highlight");
+          }
+        }
+        if ((x - 2) % 3 == 0) { newLine = newLine.replace("LR", "C"); }
+        highlight = highlight.replace(x, newLine);
+      }
+      $(`.txt${cell}`).val('');
+      $(`.div${cell}`).html(highlight);
+      // Highlights candidates in current cell
+      break;
+    case "must be":
+      rcb[0] = Instructions[line].slice(Instructions[line].indexOf("#") + 1);
+      rcb[1] = rcb[0].slice(rcb[0].indexOf("#") + 1);
+      rcb[0] = rcb[0].slice(0, rcb[0].indexOf("#"));
+      for (let x = 0; x <= 8; x++) {
+        if (!$(`.txt${Groups[rcb[0]][x]}`).hasClass('originalBoard')) {
+          $(`.txt${Groups[rcb[0]][x]}`).addClass('otherCell');
+        }
+      } // Highlights Cells of first row/column/box
+
+      number = OutText[line].slice(OutText[line].indexOf("Number") + 7);
+      number = number.slice(0, 1);
+      for (let x = 0; x <= 8; x++) {
+        cell = Groups[rcb[1]][x];
+        if (Board[cell].includes(number)) {
+          Board[cell] = Board[cell].replace(number, "");
+          canConvert(cell);
+          newLine = "<span class=" + "'" + "highlightBoardC" + "'" + ">" + number + "</span>";
+          if ($(`.txt${cell}`).hasClass('otherCell')) { newLine = newLine.replace("highlight", "other"); }
+          highlight = "123\n456\n789".replace(number, newLine);
+          if ((number - 2) % 3 != 0) { 
+            newLine = newLine.replace("C", "LR"); 
+            highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, newLine);
+          }
+          $(`.div${cell}`).html(highlight);
+        }
+      } // Highlights candidates of second row/column/box
+      break;
+    case "subset":
+      rcb[0] = Instructions[line].slice(Instructions[line].indexOf("#") + 1);
+      numbers = rcb[0].slice(rcb[0].indexOf("#") + 1);
+      rcb[0] = rcb[0].slice(0, rcb[0].indexOf("#"));
+      cells = OutText[line].slice(OutText[line].indexOf("Cell"));
+      cells = cells.replace(/,/g, '');
+      cells = cells.replace("and", '');
+      do {
+        location = cells.search(/\d/);
+        cell = cells.slice(location, location + 2);
+        $(`.txt${cell}`).addClass('highlightCell');
+        // Highlight used Cells
+
+        highlight = "123\n456\n789";
+        for (let x = 1; x <= 9; x++) {
+          newLine = "<span class=" + "'" + "fillerBoardLR" + "'" + ">" + x + "</span>";
+          if (Board[cell].includes(x)) {
+            newLine = newLine.replace("filler", "other");
+            if (!numbers.includes(x)) {  
+              Board[cell] = Board[cell].replace("" + x, "");
+              newLine = newLine.replace("other", "highlight");
+            }
+          }
+          if ((x - 2) % 3 == 0) { newLine = newLine.replace("LR", "C"); }
+          highlight = highlight.replace(x, newLine);
+        }
+        $(`.txt${cell}`).val('');
+        $(`.div${cell}`).html(highlight);
+        cells = cells.slice(location + 3);
+      } while (cells.length > 1); // Highlight candidates
+      for (let x = 0; x <= 8; x++) {
+        if ($(`.txt${Groups[rcb[0]][x]}`).val().length > 1) { $(`.txt${Groups[rcb[0]][x]}`).addClass('otherCell'); }
+      } // Highlights other subset Cells
+      break;
+    case "chain":
+      number = OutText[line].slice(OutText[line].indexOf("Number") + 7, );
+      number  = number.slice(0, 1);
+
+      let rc1 = Instructions[line].slice(Instructions[line].search(/\d/));
+      let rc2 = rc1.slice(rc1.indexOf("#") + 1);
+      rc1 = rc1.slice(0, rc1.indexOf(rc2) - 1);
+      do {
+        let rc = rc1.slice(0, rc1.indexOf("|"));
+        rc1 = rc1.slice(rc1.indexOf("|") + 1);
+        for (let x = 0; x <= 8; x++) {
+          if ($(`.txt${Groups[rc][x]}`).hasClass('candidateCell')) { $(`.txt${Groups[rc][x]}`).addClass('otherCell'); }
+        }
+      } while (rc1.length > 1);
+      // Highlight first set of rows/columns
+
+      do {
+        let rc = rc2.slice(0, rc2.indexOf("|"));
+        rc2 = rc2.slice(rc2.indexOf("|") + 1);
+        for (let x = 0; x <= 8; x++) {
+          if ($(`.txt${Groups[rc][x]}`).hasClass('candidateCell')) {
+            if ($(`.txt${Groups[rc][x]}`).hasClass('otherCell') && Board[Groups[rc][x]].includes(number)) { 
+              $(`.txt${Groups[rc][x]}`).removeClass('otherCell');
+                $(`.txt${Groups[rc][x]}`).addClass('highlightCell');
+                highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, "<span class=" + "'" + "otherBoardLR" + "'" + ">" + number + "</span>");
+                if ((number - 2) % 3 == 0) { highlight = "123\n456\n789".replace(number, "<span class=" + "'" + "otherBoardC" + "'" + ">" + number + "</span>"); }
+                $(`.div${Groups[rc][x]}`).html(highlight);
+                Board[Groups[rc][x]] = Board[Groups[rc][x]].replace(number, "");
+                canConvert(Groups[rc][x]);
+            } else {
+              $(`.txt${Groups[rc][x]}`).addClass('otherCell');
+            }
+          }
+        }
+      } while (rc2.length > 1);
+      // Highlights the other set of rows/columns and highlights the number in the chain Cells
+      
+      cells = OutText[line].slice(OutText[line].indexOf("Cell"));
+      cells = cells.replace(/,/g, '');
+      cells = cells.replace("and", '');
+      do {
+        location = cells.search(/\d/);
+        cell = cells.slice(location, location + 2)
+        Board[cell] = Board[cell].replace(number, "");
+        canConvert(cell);
+        highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, "<span class=" + "'" + "highlightBoardLR" + "'" + ">" + number + "</span>");
+        if ((number - 2) % 3 == 0) { highlight = "123\n456\n789".replace(number, "<span class=" + "'" + "highlightBoardC" + "'" + ">" + number + "</span>"); }
+        $(`.div${cell}`).html(highlight);
+        cells = cells.slice(location + 3);
+      } while (cells.length > 1);
+      // Highlights the candidates to be removed
+      break;
+  } // Highlights the clicked line items
 }
 
 
@@ -589,7 +815,7 @@ function createBoardString() {
   OutText.push(`\n`);
   Instructions.push('skip');
   OutText.push(`\n${boardString}`);
-  Instructions.push('boardString');
+  Instructions.push('boardString#');
   OutText.push(`\n`);
   Instructions.push('skip');
   OutText.push(`\nSolution:`);
@@ -616,13 +842,19 @@ function inputBoard() {
     });
   }
   outputBoard();
+  $(`.div`).html('');
   Cells.forEach(function(x) {
     Relations[x][20] = "";
     if (Board[x].length > 0) {
       $(`.txt${x}`).addClass('originalBoard');
       $(`.txt${x}`).attr('readonly','true');
     } else {
+      if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
       $(`.txt${x}`).removeClass('originalBoard');
+      $(`.txt${x}`).removeClass('candidateCell');
+      $(`.txt${x}`).removeClass('highlightCell');
+      $(`.txt${x}`).removeClass('otherCell');
+      $(`.txt${x}`).removeClass('noTouchy');
       $(`.txt${x}`).removeAttr('readonly','true');
     }
   });
@@ -659,6 +891,7 @@ function clearBoard() {
   $(`.txt`).removeClass('originalBoard');
   $(`.txt`).removeAttr('readonly','true');
   $(`.txt`).removeClass('highlightCell');
+  $(`.txt`).removeClass('noTouchy');
 }
 
 // Output Tools
@@ -831,10 +1064,10 @@ function clearRelations(cellNumber) {
 
     if (ClearedCount == 81) {
         OutText.push("\nCell " + cellNumber + " is " + Board[cellNumber] + ", and that completes the puzzle.");
-        Instructions.push('remove related');
+        Instructions.push('remove related#');
     } else if (ClearedCount != 82) {
         OutText.push("\nCell " + cellNumber + " is " + Board[cellNumber] + ", so remove " + Board[cellNumber] + " as a possibility from all related Rows, Columns, and Boxes.");
-        Instructions.push('remove related');
+        Instructions.push('remove related#');
     } // If the puzzle isn't solved then print the removal plan, if it is than print the final number
     return 1;
   }
@@ -1015,7 +1248,7 @@ function evaluateSubgroupOverlap(rcNum, number, boxNum, boxCells) {
             boxCells = findNumberInRCB(number, boxNum);
           // Resets array after finding interaction
           OutText.push("\nIn " + convertRCBToText(trials[z]) + ", the Number " + number + " must be in " + convertRCBToText(trials[Math.abs(z - 1)]) + ", so remove " + number + " as a possibility from Cell" + addCommasAndAnd(cellNums) + ".");
-          Instructions.push('must be');
+          Instructions.push('must be#' + trials[z] + '#' + trials[Math.abs(z - 1)]);
           } // Prints the removed Numbers
         }// If the overlapping Cells are the only instances then remove that Number
         // from the possibilities from the rest of either the Box or Row/Column
@@ -1115,7 +1348,7 @@ function evaluateSubset(subset, cells, rcbNum) {
     if (subset[3] != 0) { subNums += subset[3] + "|"; }
     if (subset[4] != 0) { subNums += subset[4] + "|"; }
     OutText.push("\nIn " + convertRCBToText(rcbNum) + ", the numbers " + addCommasAndAnd(subNums) + " form a Subset, so clear the rest of Cell" + addCommasAndAnd(cellNums) + ".");
-    Instructions.push('subset');
+    Instructions.push('subset#' + rcbNum + '#' + subNums);
   } // Prints the removed Numbers
 
   return changes;
@@ -1208,14 +1441,18 @@ function findAndEvaluateChain(sCombo, rowsOrColumns, number) {
     if (resultCells != "") {
       let rcTag = "";
       let switchTag = "";
+      let firstReturn = "";
+      let secondReturn = "";
       for (let y = 1; y <= chainSize; y++) {
         rcTag += sCombo[y] + "|";
+        firstReturn += (rowsOrColumns == 0 ? -1 : 8) + sCombo[y] + "|" ;
         switchTag += switchRC[y] + (rowsOrColumns == 1 ? + 1 : - 8) + "|";
+        secondReturn +=  switchRC[y] + "|" ;
       }
       rcTag = addCommasAndAnd(rcTag);
       switchTag = addCommasAndAnd(switchTag);
       OutText.push("\nIn " + (rowsOrColumns == 0 ? "Rows " : "Columns ") + rcTag + ", the Number " + number + " forms a Chain in " + (rowsOrColumns == 1 ? "Rows " : "Columns ") + switchTag + ", so remove " + number + " as a possibility from Cell" + addCommasAndAnd(resultCells) + ".");
-      Instructions.push('chain');
+      Instructions.push(`chain#${firstReturn}#${secondReturn}`);
       results = true;
     } // Prints the removed Numbers
   }
@@ -1320,7 +1557,7 @@ function onlyInGroup() {
       if (instances[1] == 1 && Board[Groups[rcbNum][instances[0]]].length > 1) {
         Board[Groups[rcbNum][instances[0]]] = "" + number;
         OutText.push("\nCell " + Groups[rcbNum][instances[0]] + " is the only Cell in " + convertRCBToText(rcbNum) + " that can be " + number + ".  So Cell " + Groups[rcbNum][instances[0]] + " is " + number + ".");
-        Instructions.push('only group');
+        Instructions.push('only group#' + rcbNum);
         // Prints the removed Numbers
 
         returns = true;

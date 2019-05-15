@@ -16,6 +16,7 @@
   margin-left: 92px;
   margin-top: 10px;
   margin-bottom: 10px;
+  cursor: context-menu;
 }
  
 .board {
@@ -41,6 +42,7 @@
 }
 
 .txt {
+  text-align: center;
   position: relative;
   overflow: hidden;
   background: transparent;
@@ -56,32 +58,38 @@
   z-index: 1;
 }
 
-.highlightBoardX {
-  background-color: green;
-  padding: 1px;
-  padding-right: 3px;
-  padding-left: 2px;
-  font-size: 9.5px;
+.highlightBoardC, .highlightBoardLR {
+  background-color: red;
 }
 
-.highlightBoardLeft {
+.otherBoardC, .otherBoardLR {
   background-color: green;
-  padding: 1px;
-  padding-right: 2px;
-  padding-left: 3px;
-  font-size: 9.5px;
 }
 
-.highlightBoardRight{
-  background-color: green;
-  padding: 1px;
-  padding-right: 3px;
-  padding-left: 2px;
-  font-size: 9.5px;
+.fillerBoardC, .fillerBoardLR {
+  background-color: white;
 }
 
 .highlightCell {
-  border: 1px solid orange;
+  border: 1px solid darkorchid;
+}
+
+.otherCell {
+  border: 1px solid rgb(21, 21, 224);
+}
+
+.highlightBoardC, .otherBoardC, .fillerBoardC {
+  padding-left: 3px;
+  padding-right: 3px;
+  margin-left: 1px;
+  margin-right: 1px;
+  font-size: 9.5px;
+}
+
+.highlightBoardLR, .otherBoardLR, .fillerBoardLR {
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: 9.5px;
 }
 
 .currentCell {
@@ -90,7 +98,12 @@
 
 .candidateCell {
   font-size: 9.5px;
-  padding-top: 3px;
+  padding-top: 2px;
+}
+
+.noTouchy {
+  pointer-events: none;
+  
 }
 
 .originalBoard {
