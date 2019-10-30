@@ -78,6 +78,10 @@
   border: 1px solid rgb(21, 21, 224);
 }
 
+.guessCell {
+  border: 1px solid orange;
+}
+
 .highlightBoardC, .otherBoardC, .fillerBoardC {
   padding-left: 3px;
   padding-right: 3px;

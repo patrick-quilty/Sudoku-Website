@@ -1,12 +1,111 @@
 let Puzzles = [];
-
-Puzzles[4] = [
-  'a..f..d.g.g..ic..a.f.......h.a..g.e.....c.....d.e..h.f.......b.b..ce..i.c.g..i..e',
-
-
-
-
-
-
-
+Puzzles[1] = [ // Easy
+  'h..gfi....gbd....i.id..ca.ggd.acf.b.a..iebf.db.ehd.iac..a.ghbif...f.ahde.hf.bdgca',
+  '.h.a..bge.gf..h.iddbegic..f.....eif..c.ig.d..e..fd.h.g.f....ea.h.i.a.gbcbe.c..f..',
+  'egh.f.ibcb...i...d.fd.b.ag..hbfdgec...cbhig....ic.eh...bg...dh....h.f...hi.....ae',
+  'hb.ga..eiad....b....g.b..fcg..b....dd.i..efa.....hde.g.g..cai..c.a.d..bei.dh.b.c.',
+  '...ag.....b.f..cd..de.biag.gh.da.f.....gfcb.a.a.ihe.cd......d..eg.b.fia.if...g...',
+  '.de..f.c..g.hd.fei...ie..d.e.h.g..ia.........dc.fi.e.b.i..cg.....b.hi.a..h.af.ib.',
+  '..i....hc.a...h..e...dcag.f.dbe.cig..ih..bf...gf.d...bfh.g......c...d.fai.dc..h..',
+  'e....d..b....aceg...gh..d...ibdf...ec.d.h.b.fa...cbhd...c..hi...eicd....g..b....d',
+  '......c.egei......a.d.....hf.b.g.....d.haf...i..ce....bih..daf..ga.f..e.e.cg.aih.',
+  'bid.....eeh.d..ga.a..hie..b.ac.bd.....ec.i.f...ief.....f....a.d.e..h....c.b...e..',
+  '..ebhc..ic..a.e.b......i....i..c...d.adebfic.b...i..e....i......d.f.h..ah..cdbf..',
+  '........h.dh...ei.bfe......gh...d.ec..bhegd..e..a...gb.e..c.b.a.....ai.d..fbi....',
+  '..hb.c....b.g..c..gc.e...bh....d.gc..ad...ef..gi.b....ae...i.df..c..b.e....d.ai..',
+  '.i..ed..b..b...c.fh...ac..d...h.id...c..f..b...ac.e...b..gi...cf.d...a..c..dh..g.',
+  'f.c..abdhbgde...f........c..d..f.....b.c.e..f.f.h..e..e....gd.adi..........bc..e.',
+  'g...e....b.i..c..a..ca..ib..g......f..bgiad..d......a..cg..df..f..c..a.e....b...c',
+  '.......c.....h.i.a..bda..fhb.c...hg....g.e....da...b.eec..gad..a.h.f.....i.......',
+  '.d.ia..e..g....c..ebf....i..a.c..d......i......d..g.h..c....edf..i....a..e..bd.g.',
+  '.e...d.....i...f.e...b.eh..e....a.fhh.......gaf.g....c..bf.g...g.f...d.....h...i.',
+  'd....cg.e.....e......baf....c...a.h..e.....i..a.d...b....ceg......h.....b.fa....c'
+];
+Puzzles[2] = [ // Intermediate
+  '....i.....if..g.h...e..h..i....d.b..ceah.figd..d.g....a..d..e.c.d.e..af.....f....',
+  '..bh....i.d.fe.ga.........e...e...if.h.g.a.c.ai...f...b.........ef.ac.h.d....eb..',
+  'af....d.....f.g.eh.b.h...a.....gea...g.....b...acd.....a...c.f.hi.g.b.....c....gb',
+  '.ha.e...b...f.ih.a.i...b..ee....a....d.....i....c....gf..i...b.h.ba.e...c...f.ga.',
+  '.i...agb..g...d..hch..g....i......f...cef......fa...c.e..i..f......dci..a......gc',
+  '.h.i.g..b.....ec.a..f....g...h.d...c..e..c......gi.ef.feb......i..he.b.....f...d.',
+  '.d.eai...........gc.a.....fd.....efae.fc........af.....f..i.g.h....gf.i..bi....c.',
+  'ai..g.........fh.i..fa....bd....h.c.ca.g.........b.g......a.f...b.f.d.hc.fa...e..',
+  '..a......if.....d.eh.cga....ie..g......fhc......d..gh....gib.ae.d.....gc......i..',
+  'c..egi.d...f...c...b.........hi.e..c.f..d..b.i..c.fe.........c...i...g...a.bch..i',
+  'd....c.b.c..f..h....bd.hef..a........b..e..i........g..dea.fg....c..e..i.i.c....e',
+  'ae........i.e....db.hdf..e.g.i......e.......c......a.f.h..geb.ii....a.d........he',
+  'hf.......d.ibc..f..g.f....ba.g......f.......e......h.cg....h.b..i..afd.g.......if',
+  'g.dfb..i...b.e..g.i........d.c.....b...d..h.....g....a.e..d...h...b..dcg..g.h....',
+  'af.d..g.........b.c...bga....f......he...a..i...b...ed.....c..f.a..eh....g...b...',
+  'd...f..i...e..d...a....h..bi..b....a.c.ae..........f.c..h.gc.......a...f.g....ea.',
+  '...a.b.......d.hai.i...c..g......b....fde....gh..b.c..h.i.........g.d..f...i...e.',
+  '......g.d....bei...h.a....c.a..fg.........b.hcd.h.......f........a.d.....i..gac..',
+  'd..............be....gb..a....h.....c.e..a....a..c..i..h.i....f.gf.a..b......f..d',
+  'e..ib.....d....ge.a.f......i.........g.e.c.d.........f......b.a.ec....i.....hd..g'
+];
+Puzzles[3] = [ // Hard
+  '.e.gda...bhiecf....d.ibhefcef.c.ib..h..dfe..i..da.b.e.dcehag......bedac....fic..e',
+  'i..c..e.f.f..ba..i.c.......g.i..f.d.....a.....e.d..g.c.......h.h..ad..b.a.f..b..d',
+  'ef...........d.cg.a..h..i.e..ia....c.b.....a.g....dh..d.h..b..g.ca.e...........ed',
+  '....a.b.e.f.h...gi...c..h..di...g.f...........a.e...id..c..f...ge...a.h.i.d.c....',
+  '..dg.i..b....e......c....ga.che.d..f.........b..a.fih.da....e......a....c..i.hg..',
+  '.....d.ga......e...c...g.hdc......e..dah....c..be....h.g..b..d...c..i...d..a.h...',
+  'h..i..g.d.c...d.......a..hc...d..a.....fch..eg.....i.h.d.be....ag........bc......',
+  '.e.....d.h...........bgh..cg...dca...c.........d...b.ie..ica.f.....bdi.e.a.......',
+  'e.....fi.....fb.ge...h....d.h...d.....b.e.d.....g...a.f....g...da.ch.....gh.....f',
+  'iah...d..b.e.........f...a..h...g.i..g..h..b...a..c...ac.....fi......bc.f...d...a',
+  'i.c...a.b.f.i..........c.hg....c.d....ad.e.....d......b....h.e.fh.b.d.a.a...f....',
+  '....b...a.a.d.f.gb.i.g....f......d.....i.da....d.h....cg.h..........e.b.f.a...h.e',
+  '..cf.......abh....di..............fd.gi.....ab.d.g..h......eb...af..id........h.i',
+  '.......gi..c.i.h..e...c.d..d...bi......a.....h.fg....d......g...gh...ai....h.b.e.',
+  'c..a.i.....fb.......id..ga.b.....fda....d...e.e.....g.a......i.h...fc..b......c..',
+  '..b..c......e....h.h..g.a........hb..i..cf...e..a.....i......af..e.i...chf......d',
+  '.e..d....h....f...f..h...e..bc...h..........di...fc.b..g.eb........h..gac.a......',
+  '.ic....ae........dg..i.ch.b....id....a.f...........c.....g.....hb......i.dfea....',
+  '.....c..b.a...i..feic.d......a.........a....hi....bd...c..h.i..g.h......d......b.',
+  '.........bh....a.ig...e...........faf..h.b.....c.g..b....i....b..f.a..dh.g..f....'
+];
+Puzzles[4] = [ // Expert
+  'hceigbadf..b.e.cihafih..bgeehcb..gfib...hieacia.e..dhb.e..bhicd.i.c.e.bgcb.di..ea',
+  '.hga.i.fb...efg.ih.f...hg..ge..ifhd.h..g.d..ff.dhea.bg..hfaebgdagedhbfcibdfigcahe',
+  'f.a.ec..h.hb.fdecae.cah.fg.ae..ch..f.chdgfae..f.ea..hchbfc.e.ag.aehbgcf.c..f.ahbe',
+  '.hcfb.gidb.digh...gi.c.dbh..egd.b...fbae.c.dg.dhafg.ebd.bg...ch.g.hc.db.hcibd.fg.',
+  'f..h.c..b.b..f.c..c.eb.gf.hd.cg.e.hf.gf..h.ceehbfc....gfiahb..c.c...fibgbedcgihfa',
+  '.fcdiab.e.e..gc.fii..f.e....aeicf.b.ci...g.ef...e.dic....geh.ib..iafbe..ebgcdifah',
+  '.bch.i.a....f.a....a.gbce..chdbag..e...dih...biaecfhdgh.b.fd.e....ihb....fi.gebh.',
+  'a.ih..gfdh..f.gaci...i..hbei..b.hcef..he..diaf....ibhgei.g.bfa.......i.....ci.e..',
+  'ce.h.f.b.f....e...g.dai..f.ad.ie.fgb..f...i.ai..fa..ch.fge.icad...df....di.g...hf',
+  '.i....ba.af..e.gh.g..a.h.fde.i..afc...afgb...fd....h.ab..i..a.f..f.a.c.h.ac....e.',
+  '.ba......id.c.....hg..ief....dib..hf..ha.di..gi..cha....ihg..fc.....c.ih......ba.',
+  '.a.c..be..eg..acd.h.c...a.gc.ib..g.d..b...f.......i...g.e...h.f.ca..hig..i.e...c.',
+  '.gf....hdh..fde....i..hge...b.h.ag.............gc.b.d...hga..c....ecf..acf....de.',
+  '..fa.i.c.......b....c..dief.f..i...e.ce...fi.h...f..d.cgbe..h....h.......i.c.be..',
+  'a.....hbed.g.....i.h...e.d....bd.i.a....a....g.i.fh....d.h...a.e.....d.gbga.....h',
+  'g.......f.i..f..h...fd.ga....ag.hd......e......ef.ib....gh.be...e..g..c.d.......a',
+  '.c..d.g.....f...ceh.b.e.d.....d...h...c...f...f...i.....a.b.c.fcb...e.....g.a..i.',
+  'b...e...c.d...ca....gi...h.i......e.....c.....f......i.h...gf..f.dh...g.eg..f.h.d',
+  '.........cb...f..g..gbd...ed.fe...c......de.f..h....g..a.hb....fc..e..da.......b.',
+  'h...b...f..fi.d......a...g..gb...d..f...g...b..e...fh..d...h......b.ac..a...c...e'
+];
+Puzzles[5] = [ // Trial and Error
+  'age.f..id.ide..fb..fb..de..edf..a....hgfceda..acd...effbice.ad.gea.df...dchab..fe',
+  '.hfae.cg..eb.gc..a.c.fd.ie..bec.d..ghd.g.f.cec..e.a.d..ad.ce.b.e.cba....bihdfgeac',
+  'iagh....f..bg.fhai.h.aei.gbb..ihcf...fhbge.ic...dfa.bh.b.eih.c..d.f..ih.h..c..bfe',
+  'e.b.....cah.e.c.bgigc.d.e.fgc..h.....i.fag.c.....c...icai.b..ehfbgheaciddehc..b.a',
+  '.ih.b.....fbi.ghc.g.dh..bifh..di...b..i..b.h.b...ah..iig..hedbc.h.b.iaeg.b..g.ifh',
+  'ai...e.gcd........c.f.h.....ca.e.bi.b..hiacfg.fi...ea.f..eb.i.aia.....beeb.dai.cf',
+  'cb...hegdd...b..h..h.d....b..h...bdfi..hdbg.aadbg..h..b..ig..ah...bh...ehice...bg',
+  'a..h.deg..h..e.d.adeg.c.f.hed......igah.d.ce.b..e...dg..adg.b.ec.e.a...dh.d..e.a.',
+  '.daf.cg.bgf.beadh...bg....a.g...eab...f.gbe...bed.........b.i...idc.gbaeb.ge.i.c.',
+  'igaeh...b.ec..b..ad.b.age.........ecb...g..afac.......e.fgb.chd.b.dc.a.ec...eh.bg',
+  'a..fci..d...dea.g.d.cghb.iaf..e..ac..ceab.....a..fc..eei.cgfd..ch.ba....g........',
+  'ifga.bde....i.d..gcbde..........c..i..f...c..acih...d.f.c..e.hddebf......i.cd.efb',
+  '..c......fdhbg.a.ei...df.g.hb......faci.f.edbef...b.h.chaeb...gd.f.ha......f..h..',
+  '.b.......egcdaifbhd..e.bg.a.i.c.....h.d.bec.g.....a.f.i....f.gcg.fbe.i.d.......ef',
+  '.....ga....cf.b..ig.f..d.hbh..ceaf.g...db......eg....difabgcdehd....eb....bad....',
+  '.c.die.hbbe...f..c.....b..e..b..dc.ac.e.a.hbddahb.....i..g....h...e...cfeb..fh.d.',
+  '...h...f.h.....i.bf.b.i.d.hd.feh.agig.h...f.c.ai.fg..d..c.e.b.fb.d.....a.f...h...',
+  'h...c.f.a........h.ageh.d..ic...e..d.g..b..afb..h...ie.hd.abef.a..........b.e.a.c',
+  'e.........fc.a.dg.id....b.f....fdia.....b.....biag....a.g....id.ih.c.fb.........a',
+  '.g..d..be..fi.bg...b..g....ie.h...a...........f...a.gb.......c...eb.df..gc..h..e.'
 ];

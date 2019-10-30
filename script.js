@@ -10,6 +10,7 @@ let Instructions = [];
 let Guess = false;
 let Complete = false;
 let Candidates = false;
+let SolveTime;
 
 // Initial Functions
 function groupsDecs() {
@@ -209,11 +210,12 @@ function boardSetup() {
   $('.output').html(`
   <textarea class="outputText" id="outputText" readonly>
   Small stuff:
-  .Add title tags for all hover elements
-  .Add more puzzles and test their actual difficulty
+  .Change message at solution text start to be about clicking gamecode to reload, and change it to toggle candidates off on boardrecall as default, until you click below the line below the gamecode)
+  .If error in entered puzzle then remove original board class from all cells and reload original board
   .Only allow 1-9 input in textareas other than txt11 where allow anything, but cap of 81 characters
   .Maybe move font size slider to above solution area at css width change
   .Handle clicks in the solution area at all other times / add click here message on solution area for the times you want it to be clickable
+  .Clicking in solution area with brute force text causes the board to go to candidate mode and then can't solve a generated puzzle
 
   Big stuff if plenty of time:
   .Arrowkey navigation
@@ -222,12 +224,14 @@ function boardSetup() {
   .Click in textarea remove candidate
   .Tools additions of remove immediate relations, and maybe furthur methods and hints or next move
   .Ensure completely keyboard accessible and tab accessible in all situations
+  .After playing around through a board from the start and clicking individual cells into candidate mode and groups in and out I was able to type letters and shit into the candidate cells directly srewing up the spacing and shouldn't happen to begin with
   
   Navel-gazing:
   .Compare to other online solvers/players
   .View other sudoku solvers highlight decisions
-  .Change all div highlights to include filler class as background
+  .Change all div highlights to include filler class as background for better spacing method
   .Brute solution area clicking
+
 
 
 
@@ -240,59 +244,59 @@ function boardSetup() {
   let controlsString = "";
   controlsString = `
     <section class="mainButtons">
-      <button class="button" id="input">
+      <button class="button" id="input" title="Input Game Code or set current board as starting board">
         <span class="input">Input</span>
       </button>
-      <button class="button" id="clear">
+      <button class="button" id="clear" title="Clear board or Solution Area">
         <span class="clear">Clear</span>
       </button>
-      <button class="button" id="solve">
+      <button class="button" id="solve" title="Solve the board and show the logic used">
         <span class="solve">Solve</span>
       </button>
-      <button class="button" id="tools">
+      <button class="button" id="tools" title="Tools for displaying candidate numbers">
         <span class="tools">Tools</span>
       </button>
-      <button class="button" id="build">
+      <button class="button" id="build" title="Build a new puzzle of a desired difficulty">
         <span class="build">Build</span>
       </button>
-      <button class="button" id="brute">
+      <button class="button" id="brute" title="Brute force solve the board">
         <span class="brute">Brute</span>
       </button>
     </section>
     <section role="region" class="slide toolsSec">
       <form role="form" class="toolsForm">
         <fieldset>
-          <button class="numbtnO" id="numbtnO" title="Toggle Candidates for All Cells">
+          <button class="numbtnO" id="numbtnO" title="Toggle candidates for all cells">
             <span class="numbtnSpan numbtnSpanO">O</span>
           </button>
-          <button class="numbtn numbtn1" id="numbtn" name="1">
+          <button class="numbtn numbtn1" id="numbtn" name="1" title="Toggle 1 for highlighted cell">
             <span class="numbtnSpan numbtnSpan1">1</span>
           </button>
-          <button class="numbtn numbtn2" id="numbtn" name="2">
+          <button class="numbtn numbtn2" id="numbtn" name="2" title="Toggle 2 for highlighted cell">
             <span class="numbtnSpan numbtnSpan2">2</span>
           </button>
-          <button class="numbtn numbtn3" id="numbtn" name="3">
+          <button class="numbtn numbtn3" id="numbtn" name="3" title="Toggle 3 for highlighted cell">
             <span class="numbtnSpan numbtnSpan3">3</span>
           </button>>
-          <button class="numbtn numbtn4" id="numbtn" name="4">
+          <button class="numbtn numbtn4" id="numbtn" name="4" title="Toggle 4 for highlighted cell">
             <span class="numbtnSpan numbtnSpan4">4</span>
           </button>
-          <button class="numbtn numbtn5" id="numbtn" name="5">
+          <button class="numbtn numbtn5" id="numbtn" name="5" title="Toggle 5 for highlighted cell">
             <span class="numbtnSpan numbtnSpan5">5</span>
           </button>
-          <button class="numbtn numbtn6" id="numbtn" name="6">
+          <button class="numbtn numbtn6" id="numbtn" name="6" title="Toggle 6 for highlighted cell">
             <span class="numbtnSpan numbtnSpan6">6</span>
           </button>
-          <button class="numbtn numbtn7" id="numbtn" name="7">
+          <button class="numbtn numbtn7" id="numbtn" name="7" title="Toggle 7 for highlighted cell">
             <span class="numbtnSpan numbtnSpan7">7</span>
           </button>
-          <button class="numbtn numbtn8" id="numbtn" name="8">
+          <button class="numbtn numbtn8" id="numbtn" name="8" title="Toggle 8 for highlighted cell">
             <span class="numbtnSpan numbtnSpan8">8</span>
           </button>
-          <button class="numbtn numbtn9" id="numbtn" name="9">
+          <button class="numbtn numbtn9" id="numbtn" name="9" title="Toggle 9 for highlighted cell">
             <span class="numbtnSpan numbtnSpan9">9</span>
           </button>
-          <button class="numbtnX" id="numbtnX" title="Toggle Candidates for Highlighted Cell">
+          <button class="numbtnX" id="numbtnX" title="Toggle candidates for highlighted cell">
             <span class="numbtnSpan numbtnSpanX">X</span>
           </button>
         </fieldset>
@@ -321,7 +325,7 @@ function boardSetup() {
             <input type="radio" name="diff" class="radio" value="5"/>
             <span class="radSpan">Trial and Error</span>
           </label>
-          <button class="button2" id="create">
+          <button class="button2" id="create" title="Create a puzzle of the selected diffficulty">
             <span class="create">Create</span>
           </button>
         </fieldset>
@@ -330,10 +334,10 @@ function boardSetup() {
     <section role="region" class="slide bruteSec">
       <form role="form" class="bruteForm">
         <fieldset>
-          <button class="button3" id="normalBrute">
+          <button class="button3" id="normalBrute" title="Brute force without shown solution path">
             <span class="normalBrute">Normal Brute Force</span>
           </button>
-          <button class="button3" id="showBrute">
+          <button class="button3" id="showBrute" title="Brute force with shown solution path">
             <span class="showBrute">Show Path Taken</span>
           </button>
         </fieldset>
@@ -400,7 +404,6 @@ function handleEvents() {
 function toggleAllCandidates() {
   // Toggles all candidates
   if (!Candidates) {
-    
     inputBoard();
     Cells.forEach(function(x) {
       if (Board[x].length = 0 || (typeof Board[x] != 'undefined')) { Board[x] = "123456789"; }
@@ -418,7 +421,6 @@ function toggleAllCandidates() {
     if (!Candidates && (typeof CanBoard[x] != 'undefined')) { test = false; }
     if ($(`.div${x}`).html().includes("span")) { test = false; }
     if (test) {
-      console.log("here", x);
       if ($(`.txt${x}`).hasClass('candidateCell')) {
         if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
         if (Board[x].length == 1) { $(`.txt${x}`).val(Board[x]); }
@@ -497,14 +499,14 @@ function notCandidateMode() {
     $(`.txt${x}`).removeClass('candidateCell');
     $(`.txt${x}`).removeClass('highlightCell');
     $(`.txt${x}`).removeClass('otherCell');
+    $(`.txt${x}`).removeClass('guessCell');
     $(`.txt${x}`).removeClass('noTouchy');
     $(`.txt${x}`).removeAttr('readonly','true');
   });
   $(`.div`).html('');
 }
 
-
-
+// Solution Area Click
 function recallBoard(line) {
   // Rebuilds the board up to the line clicked based on the output text and highlights the important items from the clicked line
   Candidates = false;
@@ -517,6 +519,9 @@ function recallBoard(line) {
   let rcb = [];
   let highlight;
   let newLine;
+  let guessBoard = [];
+  let guessDepth = 0;
+  let unsolvable = 0;
 
   for (let x = 0; x <= line; x++) {
     switch (Instructions[x].slice(0, Instructions[x].indexOf("#"))) {
@@ -585,6 +590,57 @@ function recallBoard(line) {
           } while (cells.length > 1);
         }
         break;
+      case "let's make":
+        guessDepth++;
+        guessBoard[guessDepth] = [];
+        for (let y = 11; y <= 99; y++) {
+          if (y % 10 == 0) { y++; }
+          guessBoard[guessDepth][y] = Board[y];
+        } // Save board while guessing
+        break;
+      case "unsolvable":
+        if (x != line) {
+          unsolvable++;
+          for (let y = 11; y <= 99; y++) {
+            if (y % 10 == 0) { y++; }
+            Board[y] = guessBoard[guessDepth][y];
+          } //Revert to saved board
+
+          for (let y = 11; y <= 99; y++) {
+            if (y % 10 == 0) { y++; }
+            if (Board[y].length == 1) { 
+              Relations[y][20] = "Cleared";
+              $(`.txt${y}`).val(Board[y]);
+              $(`.txt${y}`).removeClass('candidateCell');
+            } else {
+              Relations[y][20] = "";
+              $(`.txt${y}`).addClass('candidateCell');
+              canConvert(y);
+            }
+          } // Redraw based on solved status
+        }
+        break;
+      case "any":
+        guessDepth = guessDepth - unsolvable + 1;
+        unsolvable = guessDepth - 1;
+        for (let y = 11; y <= 99; y++) {
+          if (y % 10 == 0) { y++; }
+          Board[y] = guessBoard[guessDepth][y];
+        } //Revert to saved board
+
+        for (let y = 11; y <= 99; y++) {
+          if (y % 10 == 0) { y++; }
+          if (Board[y].length == 1) { 
+            Relations[y][20] = "Cleared";
+            $(`.txt${y}`).val(Board[y]);
+            $(`.txt${y}`).removeClass('candidateCell');
+          } else {
+            Relations[y][20] = "";
+            $(`.txt${y}`).addClass('candidateCell');
+            canConvert(y);
+          }
+        } // Redraw based on solved status
+        break;
     }
   } // Removes everything before the clicked line
 
@@ -600,7 +656,7 @@ function recallBoard(line) {
     $(`.txt${x}`).addClass('noTouchy');
     $(`.txt${x}`).attr('readonly','true');
   }); // Shows the candidates for all the cells not solved
-  
+
   switch (Instructions[line].slice(0, Instructions[line].indexOf("#"))) {
     case "remove related":
       cell = OutText[line].slice(6, 8);
@@ -735,12 +791,12 @@ function recallBoard(line) {
           if ($(`.txt${Groups[rc][x]}`).hasClass('candidateCell')) {
             if ($(`.txt${Groups[rc][x]}`).hasClass('otherCell') && Board[Groups[rc][x]].includes(number)) { 
               $(`.txt${Groups[rc][x]}`).removeClass('otherCell');
-                $(`.txt${Groups[rc][x]}`).addClass('highlightCell');
-                highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, "<span class=" + "'" + "otherBoardLR" + "'" + ">" + number + "</span>");
-                if ((number - 2) % 3 == 0) { highlight = "123\n456\n789".replace(number, "<span class=" + "'" + "otherBoardC" + "'" + ">" + number + "</span>"); }
-                $(`.div${Groups[rc][x]}`).html(highlight);
-                Board[Groups[rc][x]] = Board[Groups[rc][x]].replace(number, "");
-                canConvert(Groups[rc][x]);
+              $(`.txt${Groups[rc][x]}`).addClass('highlightCell');
+              highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, "<span class=" + "'" + "otherBoardLR" + "'" + ">" + number + "</span>");
+              if ((number - 2) % 3 == 0) { highlight = "123\n456\n789".replace(number, "<span class=" + "'" + "otherBoardC" + "'" + ">" + number + "</span>"); }
+              $(`.div${Groups[rc][x]}`).html(highlight);
+              Board[Groups[rc][x]] = Board[Groups[rc][x]].replace(number, "");
+              canConvert(Groups[rc][x]);
             } else {
               $(`.txt${Groups[rc][x]}`).addClass('otherCell');
             }
@@ -764,12 +820,30 @@ function recallBoard(line) {
       } while (cells.length > 1);
       // Highlights the candidates to be removed
       break;
+    case "let's make":
+      cell = OutText[line].slice(17, 19);
+      number = OutText[line].slice(-2, -1);
+      Board[cell] = number;
+      $(`.txt${cell}`).addClass('guessCell');
+
+      for (let y = 11; y <= 99; y++) {
+        if (y % 10 == 0) { y++; }
+        if (Board[y].length > 1 || y == cell) { canConvert(y); }
+      } // Redraws whole board just in case resetting from guessing
+      break;
+    case "since":
+      cell = OutText[line].slice(-21, -19);
+      number = OutText[line].slice(-10, -9);
+      Board[cell] = number;
+      $(`.txt${cell}`).addClass('guessCell');
+      
+      for (let y = 11; y <= 99; y++) {
+        if (y % 10 == 0) { y++; }
+        if (Board[y].length > 1 || y == cell) { canConvert(y); }
+      } // Redraws whole board just in case resetting from guessing
+      break;
   } // Highlights the clicked line items
 }
-
-
-
-
 
 // Slide Menus
 function buildDown() {
@@ -904,7 +978,7 @@ function outputText(fontSize) {
   span.style.fontSize = fontSize + "px";
   if (finalText == "") { finalText = "Solution Area"; }
   span.innerHTML = finalText;
-  console.log(finalText);
+  //console.log(finalText);
 }
 function assignDefaultValues() {
   // When beginning to solve the board this assigns every blank Cell an open possibility of any Number
@@ -967,8 +1041,8 @@ function sysOutPrintBoard() {
     OutText.push(`\n${rowString}`);
     Instructions.push('display');
     if (b % 3 == 0) {
-        OutText.push(`\n${borderGrid}`);
-        Instructions.push('display');
+      OutText.push(`\n${borderGrid}`);
+      Instructions.push('display');
     }// Prints the borders
   }
 }
@@ -1044,9 +1118,9 @@ function clearRelations(cellNumber) {
       if (Board[Relations[cellNumber][x]].length == 0) {
         if (Guess) {
           OutText.push("\nUnsolvable puzzle from Trial and Error.");
-          Instructions.push('guess error');
+          Instructions.push('unsolvable#');
           OutText.push("\nReverting to the board before the guess.");
-          Instructions.push('guess error');
+          Instructions.push('redraw#');
         } else {
           OutText.push("\nError in entered puzzle.  Check Cells " + cellNumber + " and " + Relations[cellNumber][x] + ".");
           Instructions.push('puzzle error');
@@ -1170,7 +1244,7 @@ function findSubgroupOverlap(cells, boxNum) {
 
   for (let subGroup = 0; subGroup <= 5; subGroup++) {
     let subCell = [0, 0, 0];
-    switch (subGroup / 3) {
+    switch (Math.floor(subGroup / 3)) {
       case 0: // Checks the 3 Rows in the Box
         for (let y = 0; y <= 2; y++) {
           if (cells[3 * subGroup + y]) { subCell[y] = 1; }
@@ -1463,9 +1537,8 @@ function findAndEvaluateChain(sCombo, rowsOrColumns, number) {
 function solveBoard() {
   // Solves the puzzle, if solvable, and details the steps taken
   notCandidateMode();
-  let solveTime;
   if (ClearedCount == 0) {
-    solveTime = new Date().getTime();
+    SolveTime = new Date().getTime();
     OutText.length = 0;
     Instructions.length = 0;
     Guess = false;
@@ -1484,36 +1557,28 @@ function solveBoard() {
   let test = [];
   do {
     test = [];
-    if (ClearedCount < 81) { test[0] = clearAllRelations(); }
-    if (ClearedCount < 81) { test[1] = onlyInGroup(); }
-    if (ClearedCount < 81) { test[2] = rcbInteraction(); }
-    if (ClearedCount < 81) { test[3] = singleGroupMultipleNumbersSubset(); }
-    if (ClearedCount < 81) { test[4] = multipleGroupsSingleNumberChain(); }
+    if (ClearedCount < 81) { 
+      test[0] = clearAllRelations();
+      if (ClearedCount < 81) { test[1] = onlyInGroup(); }
+    }
+    if (!test[0] && !test[1] && ClearedCount < 81) { test[2] = rcbInteraction(); }
+    if (!test[0] && !test[1] && !test[2] && ClearedCount < 81) { test[3] = singleGroupMultipleNumbersSubset(); }
+    if (!test[0] && !test[1] && !test[2] && !test[3] && ClearedCount < 81) { test[4] = multipleGroupsSingleNumberChain(); }
   } while (test[0] || test[1] || test[2] || test[3] || test[4]);
   // Main Logic based solve methods
 
-
-
-  // if (!Guess && ClearedCount < 81 && ClearedCount > 0) {
-  //   OutText.push("\nThe main logical methods have been exhausted.");
-  // Instructions.push('logic exhausted');
-  //   guess();
-  // } // Trial And Error solve method
-  // And add brute after if guess doesn't cut it
-  // Turn this on before finish /\
-
-
-
-
-
-  
+  if (!Guess && ClearedCount < 81 && ClearedCount > 0) {
+    OutText.push("\nThe main logical methods have been exhausted.");
+    Instructions.push('logic exhausted');
+    guess();
+  } // Trial And Error solve method
 
   if (ClearedCount == 81 && !Complete) {
     sysOutPrintBoard();
     outputBoard();
     Complete = true;
     ClearedCount = 0;
-    let totalTime = new Date().getTime() - solveTime;
+    let totalTime = new Date().getTime() - SolveTime;
     let time = totalTime / 1000;
     OutText.push("\nPuzzle solved in " + time + " seconds.");
     Instructions.push('skip');
@@ -1650,105 +1715,84 @@ function guess() {
   
   let guessBoard = [];
   let guessRelations = [];
+  let guessClearedCount = [];
+  let guessDepth = 0;
+  let guessCell = [];
+  let guessTracker = [];
+  let skipper = false;
 
-  let guessClearedCount = ClearedCount;
-
+  guessBoard[guessDepth] = [];
+  guessRelations[guessDepth] = [];
   for (let x = 11; x <= 99; x++) {
     if (x % 10 == 0) { x++; }
-    guessBoard[x] = Board[x];
-    guessRelations[x] = Relations[x][20];
+      guessBoard[guessDepth][x] = Board[x];
+      guessRelations[guessDepth][x] = Relations[x][20];
   } // Transfer current Board and Relations to guessBoard and guessRelations for storage
 
   for (let x = 11; x <= 99; x++) {
     if (x % 10 == 0) { x++; }
     if (Board[x].length == 2 && ClearedCount != 81) {
-      sysOutPrintBoard();
-      Board[x] = Board[x].slice(0, 1);
-      OutText.push("\nLet's make Cell " + x + " the Number " + Board[x] + ".");
-      solveBoard();
-      Instructions.push('skip');
-      // Pick a 2 possibility Cell and select the first option
-
-      if (ClearedCount == 82) {
-        // If that causes an unsolvable puzzle then the second option is definitely right
+      if (!skipper) {
+        guessDepth++;
+        guessBoard[guessDepth] = [];
+        guessRelations[guessDepth] = [];
+        guessClearedCount[guessDepth] = ClearedCount;
+        for (let x = 11; x <= 99; x++) {
+          if (x % 10 == 0) { x++; }
+          guessBoard[guessDepth][x] = Board[x];
+          guessRelations[guessDepth][x] = Relations[x][20];
+        } // Transfer current Board and Relations to guessBoard and guessRelations for storage
+        
+        sysOutPrintBoard();
+        Board[x] = Board[x].slice(0, 1);
+        guessCell[guessDepth] = x;
+        guessTracker[guessDepth] = 1;
+        OutText.push("\nLet's make Cell " + x + " the Number " + Board[x] + ".");
+        Instructions.push("let's make#");
+        solveBoard();
+      } // Pick a 2 possibility Cell and select the first option
+      if (ClearedCount == 82 || skipper) {
+        // If that causes an unsolvable puzzle then the second option is definitely right if the previous guesses are right
+        skipper = false;
+        ClearedCount = guessClearedCount[guessDepth];
         for (let y = 11; y <= 99; y++) {
           if (y % 10 == 0) { y++; }
-          Board[y] = guessBoard[y];
-          Relations[y][20] = guessRelations[y];
+          Board[y] = guessBoard[guessDepth][y];
+          Relations[y][20] = guessRelations[guessDepth][y];
         } // Transfer guessBoard and guessRelations back to Board and Relations from storage
-        ClearedCount = guessClearedCount;
 
         sysOutPrintBoard();
         OutText.push("\nSince Cell " + x + " as the Number " + Board[x].slice(0, 1) + " causes the puzzle to become unsolvable, Cell " + x + " must be " + Board[x].slice(1, 2) + " instead.");
-        Instructions.push('skip');
+        Instructions.push("since#");
         Board[x] = Board[x].slice(1, 2);
+        guessTracker[guessDepth] = 2;
         solveBoard();
 
         if (ClearedCount == 82) {
-          OutText.push("\nAny entry for Cell " + x + " results in an unsolvable puzzle.  Check if the puzzle was entered correctly.")
-          Instructions.push('skip');
+          // If both possibilities for the cell cause an unsolvable puzzle then go to the second option for the previous guess
+          do {
+            guessDepth--;
+          } while (guessTracker[guessDepth] == 2);
+          // Load guess board before current guess board
+
+          OutText.push("\nAny entry for Cell " + x + " results in an unsolvable puzzle.  Reverting to the board before the most recent open guess.")
+          Instructions.push('any#');
+          ClearedCount = guessClearedCount[guessDepth];
+          skipper = true;
+          Board[guessCell[guessDepth]] = guessBoard[guessDepth][guessCell[guessDepth]];
+          x = guessCell[guessDepth] - 1;
         }
-      }
+      } // Try the second option for the guessed Cell
     }
   } // If the puzzle can be solved by guessing at Cells with 2 options then solve it
 
-  for (let x = 11; x <= 99; x++) {
-    if (x % 10 == 0) { x++; }
-    if (Board[x].length == 3 && ClearedCount != 81) {
-      sysOutPrintBoard();
-      Board[x] = Board[x].slice(0, 1);
-      OutText.push("\nLet's make Cell " + x + " the Number " + Board[x] + ".");
-      Instructions.push('skip');
-      solveBoard();
-      // Pick a 3 possibility Cell and select the first option
-
-      if (ClearedCount == 82) {
-        // If that causes an unsolvable puzzle then try the second option
-        for (let y = 11; y <= 99; y++) {
-            if (y % 10 == 0) { y++; }
-            Board[y] = guessBoard[y];
-            Relations[y][20] = guessRelations[y];
-        } // Transfer guessBoard and guessRelations back to Board and Relations from storage
-        ClearedCount = guessClearedCount;
-
-        sysOutPrintBoard();
-        Board[x] = Board[x].slice(1, 2);
-        OutText.push("\nLet's make Cell " + x + " the Number " + Board[x] + ".");
-        Instructions.push('skip');
-        solveBoard();
-        // Pick a 3 possibility Cell and select the first option
-
-        if (ClearedCount == 82) {
-          // If that causes an unsolvable puzzle then the third option is definitely right
-          for (let y = 11; y <= 99; y++) {
-            if (y % 10 == 0) { y++; }
-            Board[y] = guessBoard[y];
-            Relations[y][20] = guessRelations[y];
-          } // Transfer guessBoard and guessRelations back to Board and Relations from storage
-          ClearedCount = guessClearedCount;
-
-          sysOutPrintBoard();
-          Board[x] = Board[x].slice(2, 3);
-          OutText.push("\nSince Cell " + x + " as the Number " + Board[x].slice(0, 1) + " or " + Board[x].slice(1, 2) + " causes the puzzle to become unsolvable, Cell " + x + " must be " + Board[x].slice(2, 3) + " instead.");
-          Instructions.push('skip');
-          Board[x] = Board[x].slice(2, 3);
-          solveBoard();
-
-          if (ClearedCount == 82) {
-            OutText.push("\nAny entry for Cell " + x + " results in an unsolvable puzzle.  Check if the puzzle was entered correctly.")
-            Instructions.push('skip');
-          }
-        }
-      }
-    }
-  } // If the puzzle can be solved by guessing at Cells with 3 options then solve it
+  if (!Complete) { brute(true); }
 }
 function brute(show) {
   // Hard Brute ..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9
   notCandidateMode();
   let solveTime = new Date().getTime();
-  OutText.length = 0;
-  Instructions.length = 0;
+  if (!Guess) { OutText.length = 0; Instructions.length = 0; }
   OutText.push("Begin Brute Force");
   Instructions.push('skip');
   inputBoard();
@@ -1870,18 +1914,16 @@ function newPuzzle() {
   // 5 - Symmetry
   // 9! - Numbers
   // 12,189,981,081,600 different variations Per Puzzle
+  // 100 puzzles
+  // 1,218,998,108,160,000 puzzles
 
   notCandidateMode();
   let difficulty = $("[name='diff']:checked").val();
   let newBoard;
   let random;
 
-
-  if (difficulty == 4) { newBoard = Puzzles[4][0]; } else { return; }
-  
-
-
-
+  newBoard = Puzzles[difficulty][randomIntFromInterval(0, Puzzles[difficulty].length - 1)];
+  // Select a random puzzle of the desired difficulty
 
   let wasBoard = [];
   Cells.forEach(function(x) {
@@ -2039,7 +2081,5 @@ function initialSetup() {
   groupsDecs();
   boardSetup();
   handleEvents();
-  
-
 }
 $(initialSetup);
