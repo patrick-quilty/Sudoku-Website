@@ -107,7 +107,6 @@
 
 .noTouchy {
   pointer-events: none;
-  
 }
 
 .originalBoard {
@@ -160,7 +159,7 @@ button {
 .outputText {
   cursor: pointer;
   resize: none;
-  font-size: 6px;
+  font-size: 16px;
   text-align: left;
   width: 100%;
   height: calc(100% - 33px);

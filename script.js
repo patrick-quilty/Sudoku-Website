@@ -1,16 +1,20 @@
-let Cells = [];
-let Combo = [];
-let Board = [];
-let CanBoard = [];
-const Groups = [];
-const Relations = [];
-let ClearedCount = 0;
-let OutText = [];
-let Instructions = [];
-let Guess = false;
-let Complete = false;
-let Candidates = false;
-let SolveTime;
+
+
+"use strict";
+
+let Cells = []; // Integer Array of all the cells by board coordinates (11-99)
+let Board = []; // String Array that contains all the possible solutions for each cell (Board[42] = "12358")
+const Groups = []; // Integer Array of each board group (Row 1, Column 4, Box 9)
+const Relations = []; // Integer Array of each cell's related cells (Relations[11] = all the other cells in Row 1, Column 1 and Box 1)
+let ClearedCount = 0; // The current number of solved cells
+let Combo = []; // Integer Array containing every 2, 3, and 4 digit combination of the numbers 1-9, used for exhaustive searching quicker
+let Complete = false; // Is the puzzle solved?
+let Guess = false; // Used to let the program know that trial and error mode has been entered
+let SolveTime; // Time it took to solve the board
+let OutText = []; // String Array containing each line of solution to be printed in the solution area
+let Instructions = []; // String Array containing the instructions for each line of solution to return the board to the current clicked step and highlight details
+let Candidates = false; // Is the board in candidate cell mode?
+let CanBoard = []; // String Array for that converts Board Array from "1347" to "1   3\n4    \n7    " for div higlighting
 
 // Initial Functions
 function groupsDecs() {
@@ -176,183 +180,57 @@ function groupsDecs() {
   ];
 }
 function boardSetup() {
+  // Create textArea game board spacings
   let textAreaString = `
-  <p class="columns">
-  <label class="columnBlank">..</label>
-  <label class="column">x1</label>
-  <label class="column">x2</label>
-  <label class="column">x3</label>
-  <label class="column">x4</label>
-  <label class="column">x5</label>
-  <label class="column">x6</label>
-  <label class="column">x7</label>
-  <label class="column">x8</label>
-  <label class="column">x9</label>
-  </p>
+    <p class="columns">
+      <label class="columnBlank">..</label>
+      <label class="column">x1</label>
+      <label class="column">x2</label>
+      <label class="column">x3</label>
+      <label class="column">x4</label>
+      <label class="column">x5</label>
+      <label class="column">x6</label>
+      <label class="column">x7</label>
+      <label class="column">x8</label>
+      <label class="column">x9</label>
+    </p>
   `;
+
   for (let x = 0; x <= 80; x++) {
-    if (x % 9 == 0) { 
-      textAreaString += `<p class="row"><label class="rowLabel">` + (x / 9 + 1) + `x</label>` 
+    if (x % 9 === 0) { 
+      textAreaString += `
+        <p class="row">
+          <label class="rowLabel">${x / 9 + 1}x</label>
+      `; 
     }
+    const extraLeft = (x % 3 === 0 && x % 9 !== 0) ? "extraLeft" : "";
+    const extraTop = (parseInt(x / 9) === 3 || parseInt(x / 9) === 6) ? "extraTop" : "";
     textAreaString += `
       <div class="hiContainer">
-        <textarea name="txt${Cells[x]}" id="txt${Cells[x]}" style="resize: none" class="txt txt${Cells[x]} ${(x % 3 == 0 && x % 9 != 0) ? "extraLeft" : ""} ${(parseInt(x / 9) == 3 || parseInt(x / 9) == 6) ? "extraTop" : ""}"></textarea>
-        <div name="div${Cells[x]}" id="div${Cells[x]}" class="candidateCell div div${Cells[x]} ${(x % 3 == 0 && x % 9 != 0) ? "extraLeft" : ""} ${(parseInt(x / 9) == 3 || parseInt(x / 9) == 6) ? "extraTop" : ""}"></div>
+        <textarea 
+          name="txt${Cells[x]}"
+          id="txt${Cells[x]}"
+          class="txt txt${Cells[x]} ${extraLeft} ${extraTop}"
+          style="resize: none"
+          readOnly></textarea>
+        <div
+          name="div${Cells[x]}"
+          id="div${Cells[x]}"
+          class="div div${Cells[x]} ${extraLeft} ${extraTop} candidateCell"></div>
       </div>
     `; // Adds textAreas and divs for highlighting purposes
-    if (x % 9 == 8) { 
-      textAreaString += `</p><br>` 
+    if (x % 9 === 8) { 
+      textAreaString += `
+        </p>
+        <br>
+      `;
     }
   }
   $('.board').html(textAreaString);
-  // Initialize and place board TextAreas
-
-  $('.output').html(`
-  <textarea class="outputText" id="outputText" readonly>
-  Small stuff:
-  .Change message at solution text start to be about clicking gamecode to reload, and change it to toggle candidates off on boardrecall as default, until you click below the line below the gamecode)
-  .If error in entered puzzle then remove original board class from all cells and reload original board
-  .Only allow 1-9 input in textareas other than txt11 where allow anything, but cap of 81 characters
-  .Maybe move font size slider to above solution area at css width change
-  .Handle clicks in the solution area at all other times / add click here message on solution area for the times you want it to be clickable
-  .Clicking in solution area with brute force text causes the board to go to candidate mode and then can't solve a generated puzzle
-
-  Big stuff if plenty of time:
-  .Arrowkey navigation
-  .Change how subsets are written about in the solution area and how the accompanying highlights turn out
-  .Accompanying highlights to solution area
-  .Click in textarea remove candidate
-  .Tools additions of remove immediate relations, and maybe furthur methods and hints or next move
-  .Ensure completely keyboard accessible and tab accessible in all situations
-  .After playing around through a board from the start and clicking individual cells into candidate mode and groups in and out I was able to type letters and shit into the candidate cells directly srewing up the spacing and shouldn't happen to begin with
-  
-  Navel-gazing:
-  .Compare to other online solvers/players
-  .View other sudoku solvers highlight decisions
-  .Change all div highlights to include filler class as background for better spacing method
-  .Brute solution area clicking
-
-
-
-
-  </textarea>
-  <div class="slideContainer">
-    <input type="range" min="1" max="50" value="6" class="slider" id="myRange" title="Solution Box Text Size">
-  </div>
-  `); // Initialize and place output TextArea and Font Size slider
-
-  let controlsString = "";
-  controlsString = `
-    <section class="mainButtons">
-      <button class="button" id="input" title="Input Game Code or set current board as starting board">
-        <span class="input">Input</span>
-      </button>
-      <button class="button" id="clear" title="Clear board or Solution Area">
-        <span class="clear">Clear</span>
-      </button>
-      <button class="button" id="solve" title="Solve the board and show the logic used">
-        <span class="solve">Solve</span>
-      </button>
-      <button class="button" id="tools" title="Tools for displaying candidate numbers">
-        <span class="tools">Tools</span>
-      </button>
-      <button class="button" id="build" title="Build a new puzzle of a desired difficulty">
-        <span class="build">Build</span>
-      </button>
-      <button class="button" id="brute" title="Brute force solve the board">
-        <span class="brute">Brute</span>
-      </button>
-    </section>
-    <section role="region" class="slide toolsSec">
-      <form role="form" class="toolsForm">
-        <fieldset>
-          <button class="numbtnO" id="numbtnO" title="Toggle candidates for all cells">
-            <span class="numbtnSpan numbtnSpanO">O</span>
-          </button>
-          <button class="numbtn numbtn1" id="numbtn" name="1" title="Toggle 1 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan1">1</span>
-          </button>
-          <button class="numbtn numbtn2" id="numbtn" name="2" title="Toggle 2 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan2">2</span>
-          </button>
-          <button class="numbtn numbtn3" id="numbtn" name="3" title="Toggle 3 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan3">3</span>
-          </button>>
-          <button class="numbtn numbtn4" id="numbtn" name="4" title="Toggle 4 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan4">4</span>
-          </button>
-          <button class="numbtn numbtn5" id="numbtn" name="5" title="Toggle 5 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan5">5</span>
-          </button>
-          <button class="numbtn numbtn6" id="numbtn" name="6" title="Toggle 6 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan6">6</span>
-          </button>
-          <button class="numbtn numbtn7" id="numbtn" name="7" title="Toggle 7 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan7">7</span>
-          </button>
-          <button class="numbtn numbtn8" id="numbtn" name="8" title="Toggle 8 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan8">8</span>
-          </button>
-          <button class="numbtn numbtn9" id="numbtn" name="9" title="Toggle 9 for highlighted cell">
-            <span class="numbtnSpan numbtnSpan9">9</span>
-          </button>
-          <button class="numbtnX" id="numbtnX" title="Toggle candidates for highlighted cell">
-            <span class="numbtnSpan numbtnSpanX">X</span>
-          </button>
-        </fieldset>
-      </form>
-    </section>
-    <section role="region" class="slide buildSec">
-      <form role="form" class="buildForm">
-        <fieldset>
-          <label class="diff">
-            <input type="radio" name="diff" class="radio" value="1" checked/>
-            <span class="radSpan">Easy</span>
-          </label>
-          <label class="diff">
-            <input type="radio" name="diff" class="radio" value="2"/>
-            <span class="radSpan">Intermediate</span>
-          </label>
-          <label class="diff">
-            <input type="radio" name="diff" class="radio" value="3""/>
-            <span class="radSpan">Hard</span>
-          </label>
-          <label class="diff">
-            <input type="radio" name="diff" class="radio" value="4"/>
-            <span class="radSpan">Expert</span>
-          </label>
-          <label class="diff">
-            <input type="radio" name="diff" class="radio" value="5"/>
-            <span class="radSpan">Trial and Error</span>
-          </label>
-          <button class="button2" id="create" title="Create a puzzle of the selected diffficulty">
-            <span class="create">Create</span>
-          </button>
-        </fieldset>
-      </form>
-    </section>
-    <section role="region" class="slide bruteSec">
-      <form role="form" class="bruteForm">
-        <fieldset>
-          <button class="button3" id="normalBrute" title="Brute force without shown solution path">
-            <span class="normalBrute">Normal Brute Force</span>
-          </button>
-          <button class="button3" id="showBrute" title="Brute force with shown solution path">
-            <span class="showBrute">Show Path Taken</span>
-          </button>
-        </fieldset>
-      </form>
-    </section>
-  `;
-  $('.controls').html(controlsString);
-  // Initialize and place Controls
-
-  $(`.slide`).hide();
-  $(`.slide`).slideUp();
-  // Hides sliders until needed
 }
 function handleEvents() {
-  // Tells the page to call a function based on the button clicked
+  // Handles user based events
+
   $('.controls').on('click', 'button', function(event) {
     event.preventDefault();
     switch(event.currentTarget.id) {
@@ -366,11 +244,19 @@ function handleEvents() {
       case 'build': window['buildDown'](); break;
       case 'create': window['newPuzzle'](); break;
       case 'numbtnO': window['toggleAllCandidates'](); break;
-      // case 'numbtn1', //maybe more here or how do i want to handle this
       case 'numbtnX': window['toggleOneCandidates'](); break;
-      case 'numbtn': window['toggleNumber'](event.currentTarget.name); break;
+      case 'numbtn1':
+      case 'numbtn2':
+      case 'numbtn3':
+      case 'numbtn4':
+      case 'numbtn5':
+      case 'numbtn6':
+      case 'numbtn7':
+      case 'numbtn8':
+      case 'numbtn9':
+        window['toggleNumber'](event.currentTarget.name); break;
     }
-  }); // Buttons
+  }); // Button Click handlers
 
   $('.board').on('click', 'textarea', function(event) {
     event.preventDefault();
@@ -385,7 +271,7 @@ function handleEvents() {
       case 'bruteUp': window['bruteUp'](); break;
       case 'toolsUp': window['toolsUp'](); break;
     }
-  }); // Slide up arrow actions
+  }); // Slide up menu click actions
 
   $('.slider').on('change', function() {
     event.preventDefault();
@@ -399,27 +285,114 @@ function handleEvents() {
     let line = $(".outputText")[0];
     line = line.value.substr(0, line.selectionStart).split("\n").length - 1;
     recallBoard(line);
-  }); // Gets the line number of the text that was clicked in the output textarea
+  }); // Gets the line number of the text that was clicked in the output textarea and recalls board to that step in the solution
+
+  document.querySelector('.txt11').addEventListener('paste', (e) => {
+    e.preventDefault();
+    if (!$(`.txt11`).hasClass('originalBoard')) {
+      let clipboardData = e.clipboardData || window.clipboardData;
+      let pastedData = clipboardData.getData('Text');
+      $('.txt11').val(pastedData);
+    }
+  }); // Allows the user to paste in the top left cell even though readonly
+      // Intended for reloading the Game Code
+  
+  $('.txt11').contextmenu(function() {
+    if ($('.txt11').prop('readonly')) {
+      $('.txt11').prop('readonly', false);
+      $('.txt11').trigger('contextmenu');
+      return;
+    } // Turns off readonly and retriggers event
+    if (!$('.txt11').prop('readonly')) {
+      setTimeout(function(){ 
+        $('.txt11').prop('readonly', true); 
+      }, 1);
+    } // Pulls up the correct menu then changes the property back
+  }); // Allows the user to access the right click menu from the normally readonly top left cell
+      // Intended for pasting the Game Code
+
+  $('.txt').keydown(function(e) {
+    if (!isNaN(parseInt(e.key)) && e.key !== '0') {
+      window['toggleNumber'](e.key);
+    } // Allow only single 1-9 entry in textarea
+    
+    let cell = parseInt(event.target.id.slice(-2));
+    switch(e.key) {
+      case 'Down':
+      case 'ArrowDown':
+        if (Math.floor(cell / 10) === 9) {
+          cell = (cell === 99) ? 11 : cell - 79;
+        } else {
+          cell += 10;
+        }
+        break;
+      case 'Up':
+      case 'ArrowUp':
+        if (Math.floor(cell / 10) === 1) {
+          cell = (cell === 11) ? 99 : cell + 79;
+        } else {
+          cell -= 10;
+        }
+        break;
+      case 'Left':
+      case 'ArrowLeft':
+        if (cell % 10 === 1) {
+          cell = (cell === 11) ? 99 : cell - 2;
+        } else {
+          cell--;
+        }
+        break;
+      case 'Right':
+      case 'ArrowRight':
+        if (cell % 10 === 9) {
+          cell = (cell === 99) ? 11 : cell + 2;
+        } else {
+          cell++;
+        }
+        break;
+    }
+
+    if (e.keyCode === 8 || e.keyCode === 46) {
+      if (!$(`.txt${cell}`).hasClass('originalBoard')) {
+        $(`.txt${cell}`).val('');
+      }
+    } // Handle delete and backspace cross browser
+
+    $(`.txt${cell}`).focus();
+    $(`.txt`).removeClass('currentCell');
+    $(`.txt${cell}`).addClass('currentCell');
+  });  // Handles arrow key navigation
+
+  document.addEventListener('focus',function(e){
+    if(document.activeElement.tagName === 'TEXTAREA' &&
+        document.activeElement.id !== 'outputText') {
+      $(`.txt`).removeClass('currentCell');
+      $(document.activeElement).addClass('currentCell');
+    }
+  }, true); // Handles Tab key focus error
 }
 function toggleAllCandidates() {
-  // Toggles all candidates
-  if (!Candidates) {
-    inputBoard();
-    Cells.forEach(function(x) {
-      if (Board[x].length = 0 || (typeof Board[x] != 'undefined')) { Board[x] = "123456789"; }
-      if (typeof CanBoard[x] != 'undefined') {
-        // if (CanBoard[x] = "") { CanBoard[x] = "123456789"; }
-        Board[x] = CanBoard[x].replace(/ /g,'');
-        Board[x] = Board[x].replace(/(\r\n|\n|\r)/gm,'');;
-        $(`.txt${x}`).val(CanBoard[x]);
-      }
-    });
-  } // Assigns default values the first time
+  // Displays the unsolved cells' remaining possibilities
+  
+  for (let x = 11; x <= 99; x++) {
+    if (x % 10 === 0) { x++; } {
+      if ($(`.div${x}`).html().includes("span")) { return; }
+    }
+  } // If highlights showing then skip this
+
+  Cells.forEach(function(x) {
+    if (typeof Board[x] === 'undefined' || Board[x].length === 0) { Board[x] = "123456789"; }
+    if (typeof CanBoard[x] !== 'undefined' && Board[x].length !== 1) {
+      Board[x] = CanBoard[x].replace(/ /g,'');
+      Board[x] = Board[x].replace(/(\r\n|\n|\r)/gm,'');
+      $(`.txt${x}`).val(CanBoard[x]);
+    }
+  }); // Assigns default values the first time
 
   Cells.forEach(function(x) {
     let test = true;
     if (!Candidates && (typeof CanBoard[x] != 'undefined')) { test = false; }
-    if ($(`.div${x}`).html().includes("span")) { test = false; }
+    if ($(`.div`).html().includes("span")) { test = false; }
     if (test) {
       if ($(`.txt${x}`).hasClass('candidateCell')) {
         if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
@@ -427,11 +400,14 @@ function toggleAllCandidates() {
         $(`.txt${x}`).removeClass('candidateCell');
       } else {
         if ($(`.txt${x}`).val() == "") {
-          $(`.txt${x}`).addClass('candidateCell');
+          if (!$(`.txt${x}`).hasClass('candidateCell')) {
+            $(`.txt${x}`).addClass('candidateCell');
+          }
           canConvert(x);
         }
       }
-    }
+    } // If default values have been assigned then switch the cells' display to/from candidate cell mode
+
     if ($(`.txt${x}`).val().length > 1 && !$(`.txt${x}`).hasClass('candidateCell')) {
       $(`.txt${x}`).addClass('candidateCell');
       canConvert(x);
@@ -440,27 +416,31 @@ function toggleAllCandidates() {
   Candidates = true;
 }
 function toggleOneCandidates() {
-  // Toggle highlighted cell
+  // Displays the higlighted cell's remaining possibilities or back to single solution entry mode
   Cells.forEach(function(x) {
-    if ($(`.txt${x}`).hasClass('currentCell')) {
+    if ($(`.txt${x}`).hasClass('currentCell') &&
+        !$(`.txt${x}`).hasClass('originalBoard')) {
       if ($(`.div${x}`).html().includes("span")) { return; }
       if ($(`.txt${x}`).hasClass('candidateCell')) {
         if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
         if (Board[x].length == 1) { $(`.txt${x}`).val(Board[x]); }
         $(`.txt${x}`).removeClass('candidateCell');
       } else {
-        $(`.txt${x}`).addClass('candidateCell');
+        if (!$(`.txt${x}`).hasClass('candidateCell')) {
+          $(`.txt${x}`).addClass('candidateCell');
+        }
         if ((typeof Board[x] == 'undefined') || Board[x] == "") { Board[x] = "123456789"; }
         canConvert(x);
-      }
+      } // Switches the current cells' candidate mode status
     }
   });
 }
 function toggleNumber(number) {
-  // When number button pressed switch it on or off
+  // When a Number Button is pressed add or remove that number from the current cell's list of possible solutions
   for (let x = 11; x <= 99; x++) {
     if (x % 10 == 0) { x++; }
-    if ($(`.txt${x}`).hasClass('currentCell')) {
+    if ($(`.txt${x}`).hasClass('currentCell') && 
+        !$(`.txt${x}`).hasClass('originalBoard') && !Complete) {
       if ($(`.txt${x}`).hasClass('candidateCell')) {
         if (Board[x].includes(number)) {
           Board[x] = Board[x].replace(number, "");
@@ -484,7 +464,7 @@ function toggleNumber(number) {
   }
 }
 function canConvert(cell) {
-  // If switching to candidate mode then show the candidates
+  // If switching to candidate cell mode then show the candidates
   CanBoard[cell] = "1 2 3\n4 5 6\n7 8 9";
   for (let x = 1; x <= 9; x++) {
     if (!Board[cell].includes(x)) { CanBoard[cell] = CanBoard[cell].replace(x, " "); }
@@ -501,31 +481,35 @@ function notCandidateMode() {
     $(`.txt${x}`).removeClass('otherCell');
     $(`.txt${x}`).removeClass('guessCell');
     $(`.txt${x}`).removeClass('noTouchy');
-    $(`.txt${x}`).removeAttr('readonly','true');
   });
   $(`.div`).html('');
 }
 
-// Solution Area Click
+// Clickable Solution Area
 function recallBoard(line) {
   // Rebuilds the board up to the line clicked based on the output text and highlights the important items from the clicked line
+
+  if (Instructions[0] === "Brute") { return; }
   Candidates = false;
   notCandidateMode();
-  let cell;
-  let cells;
-  let number;
-  let numbers;
-  let location;
-  let rcb = [];
-  let highlight;
-  let newLine;
-  let guessBoard = [];
-  let guessDepth = 0;
-  let unsolvable = 0;
+  // Prepares board for this method
+
+  let cell; // The current cell about to be altered
+  let cells; // The list of cells about to be altered
+  let number; // The number in the current cell about to be altered
+  let numbers; // The list of numbers in the current cell about to be altered
+  let location; // The index of the next cell in the 'cells' list
+  let rcb = []; // The Group number involved in the current step's instructions
+  let highlight; // The new text output for the div behind the cell textarea containing highlight info
+  let newLine; // The highlight info for the affected line of the div cell's input
+  let guessBoard = []; // The entire board at the time of each subsequent guess
+  let guessDepth = 0; // The number of guesses made in the current solution
+  let unsolvable = 0; // The number of unsolvable boards made by all the guesses
 
   for (let x = 0; x <= line; x++) {
     switch (Instructions[x].slice(0, Instructions[x].indexOf("#"))) {
       case "boardString":
+        x = 4;
         $('.txt11').val(OutText[x].slice(1));
         inputBoard();
         assignDefaultValues();
@@ -538,12 +522,13 @@ function recallBoard(line) {
         $(`.txt${cell}`).val(Board[cell]);
         if (x != line) {
           for (let y = 0; y <= 19; y++) {
-            Board[Relations[cell][y]] = Board[Relations[cell][y]].replace("" + Board[cell], "");
+            Board[Relations[cell][y]] =
+                Board[Relations[cell][y]].replace("" + Board[cell], "");
           }
         }
         break;
       case "must be":
-        if (x != line) {
+        if (x !== line) {
           number = OutText[x].slice(OutText[x].indexOf("Number") + 7);
           number = number.slice(0, 1);
           cells = OutText[x].slice(OutText[x].indexOf("Cell"));
@@ -569,7 +554,9 @@ function recallBoard(line) {
             location = cells.search(/\d/);
             cell = cells.slice(location, location + 2);
             for (let y = 1; y <= 9; y++) {
-              if (!numbers.includes(y) && Board[cell].includes(y)) { Board[cell] = Board[cell].replace(y, ""); }
+              if (!numbers.includes(y) && Board[cell].includes(y)) {
+		            Board[cell] = Board[cell].replace(y, "");
+	            }
             }
             cells = cells.slice(location + 3);
           } while (cells.length > 1);
@@ -614,7 +601,9 @@ function recallBoard(line) {
               $(`.txt${y}`).removeClass('candidateCell');
             } else {
               Relations[y][20] = "";
-              $(`.txt${y}`).addClass('candidateCell');
+              if (!$(`.txt${y}`).hasClass('candidateCell')) {
+                $(`.txt${y}`).addClass('candidateCell');
+              }
               canConvert(y);
             }
           } // Redraw based on solved status
@@ -636,10 +625,17 @@ function recallBoard(line) {
             $(`.txt${y}`).removeClass('candidateCell');
           } else {
             Relations[y][20] = "";
-            $(`.txt${y}`).addClass('candidateCell');
+            if (!$(`.txt${y}`).hasClass('candidateCell')) {
+              $(`.txt${y}`).addClass('candidateCell');
+            }
             canConvert(y);
           }
         } // Redraw based on solved status
+        break;
+      case "error":
+        Candidates = false;
+        notCandidateMode();
+        return;
         break;
     }
   } // Removes everything before the clicked line
@@ -649,12 +645,14 @@ function recallBoard(line) {
     $(`.txt${x}`).removeClass('highlightCell');
     $(`.txt${x}`).removeClass('otherCell');
     $(`.txt${x}`).removeClass('currentCell');
-    if (!$(`.txt${x}`).hasClass('originalBoard') && Relations[x][20] != "Cleared") {
-      if (!$(`.txt${x}`).hasClass('candidateCell')) { $(`.txt${x}`).addClass('candidateCell'); }
+    if (!$(`.txt${x}`).hasClass('originalBoard') &&
+        Relations[x][20] != "Cleared" && line > 5) {
+      if (!$(`.txt${x}`).hasClass('candidateCell')) {
+        $(`.txt${x}`).addClass('candidateCell');
+      }
       canConvert(x);
     }
     $(`.txt${x}`).addClass('noTouchy');
-    $(`.txt${x}`).attr('readonly','true');
   }); // Shows the candidates for all the cells not solved
 
   switch (Instructions[line].slice(0, Instructions[line].indexOf("#"))) {
@@ -663,9 +661,12 @@ function recallBoard(line) {
       number = Board[cell];
       $(`.txt${cell}`).addClass('highlightCell');
       for (let x = 0; x <= 19; x++) {
-        if ($(`.txt${Relations[cell][x]}`).hasClass('candidateCell')) { $(`.txt${Relations[cell][x]}`).addClass('otherCell'); }
+        if ($(`.txt${Relations[cell][x]}`).hasClass('candidateCell')) { 
+          $(`.txt${Relations[cell][x]}`).addClass('otherCell');
+        }
         if (Board[Relations[cell][x]].includes(number)) {
-          Board[Relations[cell][x]] = Board[Relations[cell][x]].replace("" + Board[cell], "");
+          Board[Relations[cell][x]] =
+            Board[Relations[cell][x]].replace("" + Board[cell], "");
           canConvert(Relations[cell][x]);
           // Removes candidate from textArea
 
@@ -686,7 +687,9 @@ function recallBoard(line) {
       rcb[0] = Instructions[line].slice(Instructions[line].indexOf("#") + 1);
       $(`.txt${cell}`).addClass('highlightCell');
       for (let x = 0; x <= 8; x++) {
-        if (Groups[rcb[0]][x] != cell && Board[Groups[rcb[0]][x]].length != 1) { $(`.txt${Groups[rcb[0]][x]}`).addClass('otherCell'); }
+        if (Groups[rcb[0]][x] != cell && Board[Groups[rcb[0]][x]].length != 1) {
+          $(`.txt${Groups[rcb[0]][x]}`).addClass('otherCell');
+        }
       } // Highlights Cells in same row/column/box
 
       highlight = "123\n456\n789";
@@ -724,7 +727,9 @@ function recallBoard(line) {
           Board[cell] = Board[cell].replace(number, "");
           canConvert(cell);
           newLine = "<span class=" + "'" + "highlightBoardC" + "'" + ">" + number + "</span>";
-          if ($(`.txt${cell}`).hasClass('otherCell')) { newLine = newLine.replace("highlight", "other"); }
+          if ($(`.txt${cell}`).hasClass('otherCell')) {
+            newLine = newLine.replace("highlight", "other");
+          }
           highlight = "123\n456\n789".replace(number, newLine);
           if ((number - 2) % 3 != 0) { 
             newLine = newLine.replace("C", "LR"); 
@@ -765,7 +770,9 @@ function recallBoard(line) {
         cells = cells.slice(location + 3);
       } while (cells.length > 1); // Highlight candidates
       for (let x = 0; x <= 8; x++) {
-        if ($(`.txt${Groups[rcb[0]][x]}`).val().length > 1) { $(`.txt${Groups[rcb[0]][x]}`).addClass('otherCell'); }
+        if ($(`.txt${Groups[rcb[0]][x]}`).val().length > 1) {
+          $(`.txt${Groups[rcb[0]][x]}`).addClass('otherCell');
+        }
       } // Highlights other subset Cells
       break;
     case "chain":
@@ -779,7 +786,9 @@ function recallBoard(line) {
         let rc = rc1.slice(0, rc1.indexOf("|"));
         rc1 = rc1.slice(rc1.indexOf("|") + 1);
         for (let x = 0; x <= 8; x++) {
-          if ($(`.txt${Groups[rc][x]}`).hasClass('candidateCell')) { $(`.txt${Groups[rc][x]}`).addClass('otherCell'); }
+          if ($(`.txt${Groups[rc][x]}`).hasClass('candidateCell')) {
+            $(`.txt${Groups[rc][x]}`).addClass('otherCell');
+          }
         }
       } while (rc1.length > 1);
       // Highlight first set of rows/columns
@@ -789,11 +798,16 @@ function recallBoard(line) {
         rc2 = rc2.slice(rc2.indexOf("|") + 1);
         for (let x = 0; x <= 8; x++) {
           if ($(`.txt${Groups[rc][x]}`).hasClass('candidateCell')) {
-            if ($(`.txt${Groups[rc][x]}`).hasClass('otherCell') && Board[Groups[rc][x]].includes(number)) { 
+            if ($(`.txt${Groups[rc][x]}`).hasClass('otherCell') &&
+                Board[Groups[rc][x]].includes(number)) { 
               $(`.txt${Groups[rc][x]}`).removeClass('otherCell');
               $(`.txt${Groups[rc][x]}`).addClass('highlightCell');
-              highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, "<span class=" + "'" + "otherBoardLR" + "'" + ">" + number + "</span>");
-              if ((number - 2) % 3 == 0) { highlight = "123\n456\n789".replace(number, "<span class=" + "'" + "otherBoardC" + "'" + ">" + number + "</span>"); }
+              highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, 
+                "<span class=" + "'" + "otherBoardLR" + "'" + ">" + number + "</span>");
+              if ((number - 2) % 3 == 0) {
+                highlight = "123\n456\n789".replace(number,
+                  "<span class=" + "'" + "otherBoardC" + "'" + ">" + number + "</span>");
+              }
               $(`.div${Groups[rc][x]}`).html(highlight);
               Board[Groups[rc][x]] = Board[Groups[rc][x]].replace(number, "");
               canConvert(Groups[rc][x]);
@@ -813,8 +827,12 @@ function recallBoard(line) {
         cell = cells.slice(location, location + 2)
         Board[cell] = Board[cell].replace(number, "");
         canConvert(cell);
-        highlight = "1 2 3\n4 5 6\n7 8 9".replace(number, "<span class=" + "'" + "highlightBoardLR" + "'" + ">" + number + "</span>");
-        if ((number - 2) % 3 == 0) { highlight = "123\n456\n789".replace(number, "<span class=" + "'" + "highlightBoardC" + "'" + ">" + number + "</span>"); }
+        highlight = "1 2 3\n4 5 6\n7 8 9".replace(number,
+          "<span class=" + "'" + "highlightBoardLR" + "'" + ">" + number + "</span>");
+        if ((number - 2) % 3 == 0) {
+          highlight = "123\n456\n789".replace(number,
+            "<span class=" + "'" + "highlightBoardC" + "'" + ">" + number + "</span>");
+        }
         $(`.div${cell}`).html(highlight);
         cells = cells.slice(location + 3);
       } while (cells.length > 1);
@@ -882,12 +900,14 @@ function createBoardString() {
         boardString += '.';
     }
   });
-  OutText.push(`Copy and paste Game Code into the top left cell and hit Input to reload the board.`);
-  Instructions.push('skip');
+  OutText.push(`Clicking any line in the solution below will set the board to that step in the solution.`);
+  Instructions.push('boardString#');
+  OutText.push(`\nPasting any Game Code to Cell 11 and hitting Input reloads that puzzle as well.`);
+  Instructions.push('boardString#');
   OutText.push(`\nGame Code:`);
-  Instructions.push('skip');
+  Instructions.push('boardString#');
   OutText.push(`\n`);
-  Instructions.push('skip');
+  Instructions.push('boardString#');
   OutText.push(`\n${boardString}`);
   Instructions.push('boardString#');
   OutText.push(`\n`);
@@ -898,7 +918,8 @@ function createBoardString() {
 function inputBoard() {
   // If importing a game string then break up the string and assign it to the Board array
   // If not then just assign to the Board array
-  if ($('.txt11').val().length == 81) {
+  if ($('.txt11').val().length == 81 || 
+      ($('.txt11').val().length === 82 && $('.txt11').val().slice(-1) === "\n")) {
     Guess = false;
     Complete = false;
     Candidates = false;
@@ -921,7 +942,6 @@ function inputBoard() {
     Relations[x][20] = "";
     if (Board[x].length > 0) {
       $(`.txt${x}`).addClass('originalBoard');
-      $(`.txt${x}`).attr('readonly','true');
     } else {
       if ($(`.txt${x}`).val().length > 1) { $(`.txt${x}`).val(''); }
       $(`.txt${x}`).removeClass('originalBoard');
@@ -929,7 +949,6 @@ function inputBoard() {
       $(`.txt${x}`).removeClass('highlightCell');
       $(`.txt${x}`).removeClass('otherCell');
       $(`.txt${x}`).removeClass('noTouchy');
-      $(`.txt${x}`).removeAttr('readonly','true');
     }
   });
 }
@@ -963,22 +982,23 @@ function clearBoard() {
   $(`.div`).html('');
   notCandidateMode();
   $(`.txt`).removeClass('originalBoard');
-  $(`.txt`).removeAttr('readonly','true');
   $(`.txt`).removeClass('highlightCell');
   $(`.txt`).removeClass('noTouchy');
 }
 
 // Output Tools
 function outputText(fontSize) {
+  // Prints the solution to the puzzle in english in the solution textarea
   let finalText = "";
   for (let x = 0; x < OutText.length; x++) {
     finalText += OutText[x];
   }
   let span = document.getElementById("outputText");
   span.style.fontSize = fontSize + "px";
-  if (finalText == "") { finalText = "Solution Area"; }
-  span.innerHTML = finalText;
-  //console.log(finalText);
+  if (finalText !== "") { span.innerHTML = finalText; }
+
+  // console.log(finalText);
+  // To see the solution text in the console turn this on
 }
 function assignDefaultValues() {
   // When beginning to solve the board this assigns every blank Cell an open possibility of any Number
@@ -1058,17 +1078,17 @@ function convertRCBToText(groupNum) {
       case 5:
       case 6:
       case 7:
-      case 8:  return `Row ${groupNum + 1}`;
-      case 18: return 'the Top Left Box';
-      case 19: return 'the Top Middle Box';
-      case 20: return 'the Top Right Box';
-      case 21: return 'the Middle Left Box';
-      case 22: return 'the Center Box';
-      case 23: return 'the Middle Right Box';
-      case 24: return 'the Bottom Left Box';
-      case 25: return 'the Bottom Middle Box';
-      case 26: return 'the Bottom Right Box';
-      default: return `Column ${groupNum - 8}`;
+      case 8:  return `Row ${groupNum + 1}`; break;
+      case 18: return 'the Top Left Box'; break;
+      case 19: return 'the Top Middle Box'; break;
+      case 20: return 'the Top Right Box'; break;
+      case 21: return 'the Middle Left Box'; break;
+      case 22: return 'the Center Box'; break;
+      case 23: return 'the Middle Right Box'; break;
+      case 24: return 'the Bottom Left Box'; break;
+      case 25: return 'the Bottom Middle Box'; break;
+      case 26: return 'the Bottom Right Box'; break;
+      default: return `Column ${groupNum - 8}`; break;
     }
   }
   return 'missing data';
@@ -1122,11 +1142,14 @@ function clearRelations(cellNumber) {
           OutText.push("\nReverting to the board before the guess.");
           Instructions.push('redraw#');
         } else {
-          OutText.push("\nError in entered puzzle.  Check Cells " + cellNumber + " and " + Relations[cellNumber][x] + ".");
-          Instructions.push('puzzle error');
+          OutText.push("\nError in entered puzzle.  Check Cells " + cellNumber +
+            " and " + Relations[cellNumber][x] + ".");
+          Instructions.push('error#');
           OutText.push("\nUnsolvable puzzle.");
-          Instructions.push('puzzle error');
+          Instructions.push('error#');
           outputText();
+          $(`.txt`).removeClass('originalBoard');
+          $(`.txt`).removeClass('noTouchy');
         }
         ClearedCount = 82;
         return 1000;
@@ -1140,7 +1163,8 @@ function clearRelations(cellNumber) {
         OutText.push("\nCell " + cellNumber + " is " + Board[cellNumber] + ", and that completes the puzzle.");
         Instructions.push('remove related#');
     } else if (ClearedCount != 82) {
-        OutText.push("\nCell " + cellNumber + " is " + Board[cellNumber] + ", so remove " + Board[cellNumber] + " as a possibility from all related Rows, Columns, and Boxes.");
+        OutText.push("\nCell " + cellNumber + " is " + Board[cellNumber] + ", so remove " + Board[cellNumber] +
+          " as a possibility from all related Rows, Columns, and Boxes.");
         Instructions.push('remove related#');
     } // If the puzzle isn't solved then print the removal plan, if it is than print the final number
     return 1;
@@ -1162,7 +1186,7 @@ function findNumberInRCB(number, rcbNum) {
 function stringNumberInRCB(number, groupNumber){
   // Converts the locations of a number in a group to an int: 1_010,001,100
   let returns;
-  test = findNumberInRCB(number, groupNumber);
+  let test = findNumberInRCB(number, groupNumber);
   returns = 1;
   for (let location = 0; location <= 8; location++) {
     returns *= 10;
@@ -1288,7 +1312,8 @@ function evaluateSubgroupOverlap(rcNum, number, boxNum, boxCells) {
           if (z == 0) { tests[z] = rcCells[y]; } else { tests[z] = boxCells[y]; }
           // Sets the appropriate Group to check (z=0:Row/Column, z=1:Box)
 
-          if (tests[z] && Groups[trials[z]][y] != overlappingCells[0] && Groups[trials[z]][y] != overlappingCells[1] && Groups[trials[z]][y] != overlappingCells[2]) {
+          if (tests[z] && Groups[trials[z]][y] != overlappingCells[0] &&
+              Groups[trials[z]][y] != overlappingCells[1] && Groups[trials[z]][y] != overlappingCells[2]) {
             onlyInstance = false;
             y = 8;
           }
@@ -1306,7 +1331,8 @@ function evaluateSubgroupOverlap(rcNum, number, boxNum, boxCells) {
             if (z == 0) { tests[z] = rcCells[y]; } else { tests[z] = boxCells[y]; }
             // Sets the appropriate Group to check (z=0:Row/Column, z=1:Box)
 
-            if (tests[z] && Groups[trials[z]][y] != overlappingCells[0] && Groups[trials[z]][y] != overlappingCells[1] && Groups[trials[z]][y] != overlappingCells[2]) {
+            if (tests[z] && Groups[trials[z]][y] != overlappingCells[0] &&
+              Groups[trials[z]][y] != overlappingCells[1] && Groups[trials[z]][y] != overlappingCells[2]) {
               if (cellNums == "") { sysOutPrintBoard(); }
               cellNums += Groups[trials[z]][y] + "|";
               Board[Groups[trials[z]][y]] = Board[Groups[trials[z]][y]].replace("" + number, "");
@@ -1321,7 +1347,9 @@ function evaluateSubgroupOverlap(rcNum, number, boxNum, boxCells) {
             changes = true;
             boxCells = findNumberInRCB(number, boxNum);
           // Resets array after finding interaction
-          OutText.push("\nIn " + convertRCBToText(trials[z]) + ", the Number " + number + " must be in " + convertRCBToText(trials[Math.abs(z - 1)]) + ", so remove " + number + " as a possibility from Cell" + addCommasAndAnd(cellNums) + ".");
+          OutText.push("\nIn " + convertRCBToText(trials[z]) + ", the Number " + number +
+            " must be in " + convertRCBToText(trials[Math.abs(z - 1)]) + ", so remove " +
+            number + " as a possibility from Cell" + addCommasAndAnd(cellNums) + ".");
           Instructions.push('must be#' + trials[z] + '#' + trials[Math.abs(z - 1)]);
           } // Prints the removed Numbers
         }// If the overlapping Cells are the only instances then remove that Number
@@ -1421,7 +1449,8 @@ function evaluateSubset(subset, cells, rcbNum) {
     let subNums = subset[1] + "|" + subset[2] + "|";
     if (subset[3] != 0) { subNums += subset[3] + "|"; }
     if (subset[4] != 0) { subNums += subset[4] + "|"; }
-    OutText.push("\nIn " + convertRCBToText(rcbNum) + ", the numbers " + addCommasAndAnd(subNums) + " form a Subset, so clear the rest of Cell" + addCommasAndAnd(cellNums) + ".");
+    OutText.push("\nIn " + convertRCBToText(rcbNum) + ", the numbers " + addCommasAndAnd(subNums) +
+      " form a Subset, so clear the rest of Cell" + addCommasAndAnd(cellNums) + ".");
     Instructions.push('subset#' + rcbNum + '#' + subNums);
   } // Prints the removed Numbers
 
@@ -1525,7 +1554,9 @@ function findAndEvaluateChain(sCombo, rowsOrColumns, number) {
       }
       rcTag = addCommasAndAnd(rcTag);
       switchTag = addCommasAndAnd(switchTag);
-      OutText.push("\nIn " + (rowsOrColumns == 0 ? "Rows " : "Columns ") + rcTag + ", the Number " + number + " forms a Chain in " + (rowsOrColumns == 1 ? "Rows " : "Columns ") + switchTag + ", so remove " + number + " as a possibility from Cell" + addCommasAndAnd(resultCells) + ".");
+      OutText.push("\nIn " + (rowsOrColumns == 0 ? "Rows " : "Columns ") + rcTag + ", the Number " + number +
+        " forms a Chain in " + (rowsOrColumns == 1 ? "Rows " : "Columns ") + switchTag + ", so remove " + number +
+        " as a possibility from Cell" + addCommasAndAnd(resultCells) + ".");
       Instructions.push(`chain#${firstReturn}#${secondReturn}`);
       results = true;
     } // Prints the removed Numbers
@@ -1536,7 +1567,7 @@ function findAndEvaluateChain(sCombo, rowsOrColumns, number) {
 // Solve Method Schemes
 function solveBoard() {
   // Solves the puzzle, if solvable, and details the steps taken
-  notCandidateMode();
+  if (!Guess) { notCandidateMode(); }
   if (ClearedCount == 0) {
     SolveTime = new Date().getTime();
     OutText.length = 0;
@@ -1565,7 +1596,7 @@ function solveBoard() {
     if (!test[0] && !test[1] && !test[2] && ClearedCount < 81) { test[3] = singleGroupMultipleNumbersSubset(); }
     if (!test[0] && !test[1] && !test[2] && !test[3] && ClearedCount < 81) { test[4] = multipleGroupsSingleNumberChain(); }
   } while (test[0] || test[1] || test[2] || test[3] || test[4]);
-  // Main Logic based solve methods
+  // Main logic based solve methods
 
   if (!Guess && ClearedCount < 81 && ClearedCount > 0) {
     OutText.push("\nThe main logical methods have been exhausted.");
@@ -1614,14 +1645,16 @@ function onlyInGroup() {
       instances[1] = 0;
       for (let location = 0; location <= 8; location++) {
         if (cells[location]) {
-            instances[0] = location;
-            instances[1] += 1;
+          instances[0] = location;
+          instances[1] += 1;
         }
       } // Checks how many Cells can contain the Number in the Row/Column/Box
 
       if (instances[1] == 1 && Board[Groups[rcbNum][instances[0]]].length > 1) {
         Board[Groups[rcbNum][instances[0]]] = "" + number;
-        OutText.push("\nCell " + Groups[rcbNum][instances[0]] + " is the only Cell in " + convertRCBToText(rcbNum) + " that can be " + number + ".  So Cell " + Groups[rcbNum][instances[0]] + " is " + number + ".");
+        OutText.push("\nCell " + Groups[rcbNum][instances[0]] + " is the only Cell in " +
+          convertRCBToText(rcbNum) + " that can be " + number + ".  So Cell " +
+          Groups[rcbNum][instances[0]] + " is " + number + ".");
         Instructions.push('only group#' + rcbNum);
         // Prints the removed Numbers
 
@@ -1762,7 +1795,9 @@ function guess() {
         } // Transfer guessBoard and guessRelations back to Board and Relations from storage
 
         sysOutPrintBoard();
-        OutText.push("\nSince Cell " + x + " as the Number " + Board[x].slice(0, 1) + " causes the puzzle to become unsolvable, Cell " + x + " must be " + Board[x].slice(1, 2) + " instead.");
+        OutText.push("\nSince Cell " + x + " as the Number " + Board[x].slice(0, 1) +
+          " causes the puzzle to become unsolvable, Cell " + x +
+          " must be " + Board[x].slice(1, 2) + " instead.");
         Instructions.push("since#");
         Board[x] = Board[x].slice(1, 2);
         guessTracker[guessDepth] = 2;
@@ -1775,7 +1810,8 @@ function guess() {
           } while (guessTracker[guessDepth] == 2);
           // Load guess board before current guess board
 
-          OutText.push("\nAny entry for Cell " + x + " results in an unsolvable puzzle.  Reverting to the board before the most recent open guess.")
+          OutText.push("\nAny entry for Cell " + x +
+            " results in an unsolvable puzzle.  Reverting to the board before the most recent open guess.")
           Instructions.push('any#');
           ClearedCount = guessClearedCount[guessDepth];
           skipper = true;
@@ -1794,7 +1830,7 @@ function brute(show) {
   let solveTime = new Date().getTime();
   if (!Guess) { OutText.length = 0; Instructions.length = 0; }
   OutText.push("Begin Brute Force");
-  Instructions.push('skip');
+  Instructions.push('Brute');
   inputBoard();
 
   let neighbors = new Array(100);
@@ -1804,8 +1840,10 @@ function brute(show) {
     let counter = -1;
     for (let b = 11; b <= 99; b++) {
       if (b % 10 == 0) { b++; }
-      if (a != b) {// If same row\/   or column\/           \/or in the same box
-        if ((a / 10 | 0) == (b / 10 | 0) || a % 10 == b % 10 || ((((a / 10 | 0) - 1 ) / 3 | 0)  == (((b / 10 | 0) - 1 ) / 3 | 0) && ((a % 10 - 1 ) / 3 | 0) == ((b % 10 - 1 ) / 3 | 0))) {
+      if (a != b) {// If same row\/   or column\/                \/or in the same box
+        if ((a / 10 | 0) == (b / 10 | 0) || a % 10 == b % 10 ||
+            ((((a / 10 | 0) - 1 ) / 3 | 0)  == (((b / 10 | 0) - 1 ) / 3 | 0) &&
+            ((a % 10 - 1 ) / 3 | 0) == ((b % 10 - 1 ) / 3 | 0))) {
           counter++;
           neighbors[a][counter] = b;
         }
@@ -1826,10 +1864,12 @@ function brute(show) {
             OutText.push("\nTrying Cell " + cell + " as " + current);
             Instructions.push('skip');
             test = true;
-            for (let neighbor = 0; neighbor <= 19; neighbor++) { ///
-              if (Board[neighbors[cell][neighbor]] != null && Board[neighbors[cell][neighbor]] != "" && Board[neighbors[cell][neighbor]] == Board[cell]) {
+            for (let neighbor = 0; neighbor <= 19; neighbor++) { 
+              if (Board[neighbors[cell][neighbor]] != null && Board[neighbors[cell][neighbor]] != ""
+                  && Board[neighbors[cell][neighbor]] == Board[cell]) {
                 test = false;
-                OutText.push("\nCell " + cell + " cannot be " + current + " because Cell " + neighbors[cell][neighbor] + " is " + Board[neighbors[cell][neighbor]]);
+                OutText.push("\nCell " + cell + " cannot be " + current + " because Cell " +
+                  neighbors[cell][neighbor] + " is " + Board[neighbors[cell][neighbor]]);
                 Instructions.push('skip');
                 neighbor = 19;
               }
@@ -1865,8 +1905,9 @@ function brute(show) {
           if (current < 10) {
             Board[cell] = "" + current;
             test = true;
-            for (let neighbor = 0; neighbor <= 19; neighbor++) { ///
-              if (Board[neighbors[cell][neighbor]] != null && Board[neighbors[cell][neighbor]] != "" && Board[neighbors[cell][neighbor]] == Board[cell]) {
+            for (let neighbor = 0; neighbor <= 19; neighbor++) { 
+              if (Board[neighbors[cell][neighbor]] != null && Board[neighbors[cell][neighbor]] != "" &&
+                  Board[neighbors[cell][neighbor]] == Board[cell]) {
                 test = false;
                 neighbor = 19;
               }
@@ -1897,6 +1938,7 @@ function brute(show) {
   OutText.push("\nThis does not guarentee the puzzle has only one solution.  This is just the first solution found.");
   Instructions.push('skip');
   outputText($('.slider').val());
+  Complete = true;
   // Print time to solve by brute force
 }
 
@@ -1982,7 +2024,7 @@ function newPuzzle() {
         Board[Groups[(y / 9 | 0) + 3 * x][y % 9]] = rows[(y / 9 | 0) + 3][y % 9];
       } // Puts the new order back on the board
     }
-  }// Switches Rows around
+  } // Switches Rows around
 
   random = randomIntFromInterval(0, 5);
   if (random > 0) {
@@ -2018,7 +2060,7 @@ function newPuzzle() {
     Cells.forEach(function(x) {
       Board[x] = rowBox[((x - 10) / 30 | 0) + 3][(x - ((x - 10) / 10 | 0) - 11) % 27];
     }); // Puts the new order back on the board
-  }// Switches Row Boxes around
+  } // Switches Row Boxes around
 
   random = randomIntFromInterval(0, 4);
   Cells.forEach(function(x) {
@@ -2069,6 +2111,7 @@ function newPuzzle() {
 
   $(`.txt11`).val(newBoard);
   inputBoard();
+  
   // Shows the final board
 }
 function randomIntFromInterval(min, max) {
