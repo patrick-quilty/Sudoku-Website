@@ -1,6 +1,6 @@
 # Sudoku Solutions
 
-Live App: [Live App](https://quiltdaddy.github.io/Sudoku-Website/)
+Live App: [Live App](https://patrick-quilty.github.io/Sudoku-Website/)
 
 Screenshot: ![Screenshot](https://i.imgur.com/yOFy0Ir.png)
 
